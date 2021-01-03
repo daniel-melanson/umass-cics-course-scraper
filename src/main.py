@@ -20,17 +20,18 @@ def main(args):
 
     # get sections, staff, and additional course information from spire
     spire.scrape_additional_course_information(course_map)
+
     # push information into db
     client = MongoClient(args[1])
     db = client[args[2]]
     semester_collection = db.semesters
     course_collection = db.courses
     staff_collection = db.staff
-    
     course_collection.insert_many(course_map.values())
     staff_collection.insert_many(staff_list)
     semester_collection.insert_many(web.get_academic_schedule())
 
+    course_collection.create_index([('id', pymongo.TEXT)])
     staff_collection.create_index([('names', pymongo.TEXT)])
 
     for course in course_collection.find():
