@@ -4,7 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.remote.errorhandler import NoSuchElementException
+from selenium.webdriver.remote.errorhandler import NoSuchElementException, WebDriverException
 
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.webdriver import WebDriver
@@ -54,8 +54,8 @@ def create_driver() -> WebDriver:
         opts.headless = True
 
         return WebDriver(options=opts)
-    else:
-        return WebDriver()
+    
+    return WebDriver()
 
 
 def wait_for_element(driver: WebDriver, attrib: str, value: str) -> WebElement:
@@ -63,7 +63,8 @@ def wait_for_element(driver: WebDriver, attrib: str, value: str) -> WebElement:
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((attrib, value))
         )
-    except:
+    except WebDriverException:
+        print("Unable to wait for", attrib, value)
         exit(-1)
 
     return driver.find_element(attrib, value)
@@ -74,7 +75,8 @@ def click_element(driver: WebDriver, attrib: str, value: str) -> None:
         WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((attrib, value))
         )
-    except:
+    except WebDriverException:
+        print("Unable to click", attrib, value)
         exit(-1)
 
     driver.find_element(attrib, value).click()

@@ -39,7 +39,7 @@ def scrape(url: str):
     try:
         res = requests.get(url)
         return BeautifulSoup(res.content, "html5lib")
-    except:
+    except requests.ConnectionError:
         return None
 
 
