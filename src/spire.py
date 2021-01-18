@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 import os
 
+=======
+>>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
 from selenium.webdriver.common.by import By
 
 from selenium.webdriver.support.ui import WebDriverWait
@@ -96,11 +99,17 @@ def click_element(driver: WebDriver, attrib: str, value: str) -> None:
     try:
         WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((attrib, value))
+<<<<<<< HEAD
         ).click()
     except WebDriverException:
         print("Unable to click", attrib, value)
 
     driver.implicitly_wait(wait_time)
+=======
+        )
+    except:
+        exit(-1)
+>>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
 
 
 def click_spire_element(driver: WebDriver, attrib: str, value: str) -> None:
@@ -157,26 +166,53 @@ def scrape_additional_course_information(course_map):
     for category in category_list:
         category_letter = category[0]
         if current_letter != category_letter:
+<<<<<<< HEAD
             click_spire_element(driver, By.ID, "DERIVED_SSS_BCC_SSR_ALPHANUM_" + category_letter)
             current_letter = category_letter
 
         category_link = find(
             lambda elem, cat=category: re.match(f"^{cat} - .+$", elem.text),
             wait_for_elements(driver, By.CSS_SELECTOR, "a.SSSHYPERLINKBOLD")
+=======
+            click_element(
+                driver,
+                By.ID,
+                "DERIVED_SSS_BCC_SSR_ALPHANUM_" + category_letter
+            )
+            current_letter = category_letter
+
+        category_link_list = driver.find_elements_by_css_selector(
+            "a.SSSHYPERLINKBOLD"
+        )
+        category_link = find(
+            lambda elem: re.match(f"^{category} - .+$", elem.text),
+            category_link_list
+>>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
         )
         category_link_id = category_link.get_attribute("id")
 
         click_spire_element(driver, By.ID, category_link_id)
 
+<<<<<<< HEAD
         course_table = wait_for_element(driver, By.CSS_SELECTOR, "table.PSLEVEL2GRID")
 
         def id_map(link_element, cat=category):
             return (cat + " " + text_of(link_element).upper(),
+=======
+        course_table = wait_for_element(driver, By.CLASS_NAME, "PSLEVEL2GRID")
+
+        def id_map(link_element):
+            return (category + " " + text_of(link_element).upper(),
+>>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
                     link_element.get_attribute("id"))
 
         course_link_id_list = list(map(
             id_map,
+<<<<<<< HEAD
             course_table.find_elements_by_css_selector("td[align=center] > div > span > a")
+=======
+            course_table.find_elements_by_css_selector( "td[align=center] > div > span > a")
+>>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
         ))
         course_link_id_list = list(filter(
             lambda ids: ids[0] in course_map,
@@ -186,7 +222,11 @@ def scrape_additional_course_information(course_map):
         for (course_id, link_id) in course_link_id_list:
             click_spire_element(driver, By.ID, link_id)
             scrape_course_page(driver, course_map[course_id])
+<<<<<<< HEAD
             click_spire_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
+=======
+            click_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
+>>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
 
         click_spire_element(driver, By.ID, category_link_id)
 
