@@ -1,3 +1,5 @@
+import os
+
 from selenium.webdriver.common.by import By
 
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,17 +11,13 @@ from selenium.webdriver.remote.errorhandler import NoSuchElementException, WebDr
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.webdriver import WebDriver
 
-from time import sleep
-
 import re
 
 # SETTINGS
 
-debug = True
 headless = True
 wait_time = 2
 
-# END OF SETTINGS
 # CONSTANTS
 
 category_list = [
@@ -29,8 +27,6 @@ category_list = [
     "MATH",
     "STATISTC",
 ]
-
-# END OF CONSTANTS
 
 
 def find(f, lst):
@@ -54,8 +50,21 @@ def create_driver() -> WebDriver:
         opts.headless = True
 
         return WebDriver(options=opts)
-    
+
     return WebDriver()
+
+
+def wait_until_not_processing(driver: WebDriver):
+    while True:
+        try:
+            WebDriverWait(driver, 60 * 2).until_not(
+                EC.visibility_of_any_elements_located((By.ID, "processing"))
+            )
+            break
+        except WebDriverException:
+            print("Spire seems to be a little slow, you should try again later.")
+            if os.environ['retry'] != "TRUE":
+                exit(-1)
 
 
 def wait_for_element(driver: WebDriver, attrib: str, value: str) -> WebElement:
@@ -70,18 +79,33 @@ def wait_for_element(driver: WebDriver, attrib: str, value: str) -> WebElement:
     return driver.find_element(attrib, value)
 
 
+def wait_for_elements(driver: WebDriver, attrib: str, value: str) -> WebElement:
+    found = None
+    try:
+        found = WebDriverWait(driver, 10).until(
+            EC.visibility_of_all_elements_located((attrib, value))
+        )
+    except WebDriverException:
+        print("Unable to wait for", attrib, value)
+        exit(-1)
+
+    return found
+
+
 def click_element(driver: WebDriver, attrib: str, value: str) -> None:
     try:
         WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((attrib, value))
-        )
+        ).click()
     except WebDriverException:
         print("Unable to click", attrib, value)
-        exit(-1)
 
-    driver.find_element(attrib, value).click()
-    if debug:
-        sleep(wait_time)
+    driver.implicitly_wait(wait_time)
+
+
+def click_spire_element(driver: WebDriver, attrib: str, value: str) -> None:
+    click_element(driver, attrib, value)
+    wait_until_not_processing(driver)
 
 
 def navigate_to_catalog(driver: WebDriver):
@@ -133,33 +157,26 @@ def scrape_additional_course_information(course_map):
     for category in category_list:
         category_letter = category[0]
         if current_letter != category_letter:
-            click_element(
-                driver,
-                By.ID,
-                "DERIVED_SSS_BCC_SSR_ALPHANUM_" + category_letter
-            )
+            click_spire_element(driver, By.ID, "DERIVED_SSS_BCC_SSR_ALPHANUM_" + category_letter)
             current_letter = category_letter
 
-        category_link_list = driver.find_elements_by_css_selector(
-            "a.SSSHYPERLINKBOLD"
-        )
         category_link = find(
-            lambda elem: re.match(f"^{category} - .+$", elem.text),
-            category_link_list
+            lambda elem, cat=category: re.match(f"^{cat} - .+$", elem.text),
+            wait_for_elements(driver, By.CSS_SELECTOR, "a.SSSHYPERLINKBOLD")
         )
         category_link_id = category_link.get_attribute("id")
 
-        click_element(driver, By.ID, category_link_id)
+        click_spire_element(driver, By.ID, category_link_id)
 
-        course_table = wait_for_element(driver, By.CLASS_NAME, "PSLEVEL2GRID")
+        course_table = wait_for_element(driver, By.CSS_SELECTOR, "table.PSLEVEL2GRID")
 
-        def id_map(link_element):
-            return (category + " " + text_of(link_element).upper(),
+        def id_map(link_element, cat=category):
+            return (cat + " " + text_of(link_element).upper(),
                     link_element.get_attribute("id"))
 
         course_link_id_list = list(map(
             id_map,
-            course_table.find_elements_by_css_selector( "td[align=center] > div > span > a")
+            course_table.find_elements_by_css_selector("td[align=center] > div > span > a")
         ))
         course_link_id_list = list(filter(
             lambda ids: ids[0] in course_map,
@@ -167,10 +184,10 @@ def scrape_additional_course_information(course_map):
         ))
 
         for (course_id, link_id) in course_link_id_list:
-            click_element(driver, By.ID, link_id)
+            click_spire_element(driver, By.ID, link_id)
             scrape_course_page(driver, course_map[course_id])
-            click_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
+            click_spire_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
 
-        click_element(driver, By.ID, category_link_id)
+        click_spire_element(driver, By.ID, category_link_id)
 
     driver.close()
