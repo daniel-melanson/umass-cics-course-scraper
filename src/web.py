@@ -261,7 +261,7 @@ def get_academic_schedule():
         semester_title = text_of(header)
 
         match = re.match(
-            r'^(university )?(spring|summer|fall) (\d{4})',
+            r'^(university )?(spring|summer|fall|winter) (\d{4})',
             semester_title,
             re.IGNORECASE
         )
@@ -282,7 +282,8 @@ def get_academic_schedule():
             day_number = text_of(event_element.select_one('td:last-child'))
 
             adjusted_year = year
-            if month_name == 'January' or month_name == 'February':
+            if season == 'winter'
+            and (month_name == 'January' or month_name == 'February'):
                 adjusted_year = str(int(year) + 1)
 
             native_time = datetime.strptime(f'%s %s %s 00:00:00' % (
