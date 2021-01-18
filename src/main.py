@@ -1,4 +1,5 @@
 import sys
+import os
 
 import pymongo
 from pymongo import MongoClient
@@ -67,12 +68,12 @@ def add_course_to_staff(staff_collection, course_staff, course_id):
 
 
 def main(args):
-    if len(args) != 3:
-        print("Please supply a connection string and db-name.")
+    if len(args) != 2:
+        print("Please supply a db-name.")
         return
 
-    client = MongoClient(args[1])
-    db = client[args[2]]
+    client = MongoClient(os.environ['MONGO_CONNECTION_STRING'])
+    db = client[args[1]]
     semester_collection = db.semesters
     course_collection = db.courses
     staff_collection = db.staff
