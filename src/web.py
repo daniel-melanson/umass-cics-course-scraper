@@ -8,17 +8,13 @@ from unidecode import unidecode
 import requests
 from bs4 import BeautifulSoup, Tag
 
-# TODO 
 aliases = {
     'Andrew Lan': 'Shiting Lan',
-    'Mohammad Hajiesmaili': 'Mohammadhassan Hajiesmaili',
-    'Ben Marlin': 'Benjamin Marlin',
-    'Tim Richards': 'Timothy Richards',
-    'David A. Mix Barrington': 'David Barrington',
     'Ivan Lee': 'Sunghoon Lee',
-    'Dan Sheldon': 'Daniel Sheldon'
+    'Joe Chiu': 'Meng-Chieh Chiu'
 }
-local_zone = pytz.timezone('America/New_York')
+local_zone = pytz.timezone("America/New_York")
+REGEXP_NAME_GROUP = "[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.'-]+"
 
 
 def clean_text(s: str):
@@ -26,7 +22,7 @@ def clean_text(s: str):
         s = s.replace(r, ' ')
 
     while '  ' in s:
-        s = s.replace('  ', ' ')
+        s = s.replace("  ", ' ')
 
     return s.strip()
 
@@ -42,41 +38,39 @@ def text_of(elem: Tag) -> str:
 def scrape(url: str):
     try:
         res = requests.get(url)
-        return BeautifulSoup(res.content, 'html5lib')
-    except e:
+        return BeautifulSoup(res.content, "html5lib")
+    except:
         return None
 
 
 def get_course_frequency():
     # cics course frequency
-    soup = scrape(
-        'https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html'
-    )
-    course_tr_list = soup.select('tr:not(:first-child)')
+    soup = scrape("https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html")
+    course_tr_list = soup.select("tr:not(:first-child)")
 
     def cics_course_frequency(elem: Tag):
         return (
-            f'%s %s' % (
-                text_of(elem.select_one('td:first-child')),
-                text_of(elem.select_one('td:nth-child(2)'))
+            '%s %s' % (
+                text_of(elem.select_one("td:first-child")),
+                text_of(elem.select_one("td:nth-child(2)"))
             ),
-            text_of(elem.select_one('td:last-child'))
+            text_of(elem.select_one("td:last-child"))
         )
 
     course_frequency = list(map(cics_course_frequency, course_tr_list))
 
     # math course frequency
-    soup = scrape('https://www.math.umass.edu/course-offerings')
-    course_tr_list = soup.select('tr:not(:only-child)')
+    soup = scrape("https://www.math.umass.edu/course-offerings")
+    course_tr_list = soup.select("tr:not(:only-child)")
 
     def math_course_frequency(elem: Tag):
-        freq = text_of(elem.select_one('td:last-child'))
-        if freq == 'Fall/Spring/Summer':
-            freq = 'Fall, Spring, and Summer'
+        freq = text_of(elem.select_one("td:last-child"))
+        if freq == "Fall/Spring/Summer":
+            freq = "Fall, Spring, and Summer"
         else:
-            freq = freq.replace('/', ' and ').replace('  ', ' ')
+            freq = freq.replace('/', " and ").replace("  ", ' ')
 
-        return (text_of(elem.select_one('td:first-child')).upper(), freq)
+        return (text_of(elem.select_one("td:first-child")).upper(), freq)
 
     course_frequency.extend(map(math_course_frequency, course_tr_list))
 
@@ -90,16 +84,13 @@ def scrape_courses():
     current_year = int(datetime.now().year) % 2000 + 1
 
     for year in range(current_year, 17, -1):
-        for id in [7, 3]:
-            soup = scrape(
-                f'https://web.cs.umass.edu/csinfo/autogen/cicsdesc1%s%s.html' %
-                (year, id)
-            )
-            if not soup or (soup.title and soup.title.text == '404 Not Found'):
+        for query_id in [7, 3]:
+            soup = scrape(f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html")
+            if not soup or (soup.title and soup.title.text == "404 Not Found"):
                 continue
 
-            for header in soup.select('h2:not(:first-child)'):
-                raw_title = text_of(header.select_one(':first-child'))
+            for header in soup.select("h2:not(:first-child)"):
+                raw_title = text_of(header.select_one(":first-child"))
                 title_match = re.match(
                     r'^(CICS|COMPSCI|INFO|INFOSEC)\s*(\w+):\s*([\w -:]+)',
                     raw_title, re.IGNORECASE)
@@ -118,7 +109,7 @@ def scrape_courses():
                         r'^(Instructor\(s\): )(.+)',
                         text_of(next_sibling), re.IGNORECASE
                     ):
-                        name_list = instructor_match.group(2).split(', ')
+                        name_list = instructor_match.group(2).split(", ")
 
                         for name in name_list:
                             if not re.match(r'Staff', name, re.IGNORECASE):
@@ -131,7 +122,7 @@ def scrape_courses():
                         course_staff.add(name)
                 else:
                     course_title = title_match.group(3)
-                    course_description = text_of(header.find_next_sibling('p'))
+                    course_description = text_of(header.find_next_sibling("p"))
 
                     course = {
                         'subject': course_subject,
@@ -141,7 +132,7 @@ def scrape_courses():
                         'staff': session_staff,
                     }
 
-                    course_website = header.select_one('a')['href']
+                    course_website = header.select_one("a")['href']
                     if len(course_website) > 0:
                         course['website'] = course_website
 
@@ -151,17 +142,14 @@ def scrape_courses():
         course['staff'] = list(course['staff'])
 
     # MATH Courses
-    soup = scrape('https://www.math.umass.edu/course-descriptions')
-    first_option = soup.select_one('#edit-semester-tid > option:first-child')
+    soup = scrape("https://www.math.umass.edu/course-descriptions")
+    first_option = soup.select_one("#edit-semester-tid > option:first-child")
 
-    min = 87
     start = int(first_option['value'])
-    for i in range(start, min, -1):
-        soup = scrape(
-            f'https://www.math.umass.edu/course-descriptions?semester_tid=%d' % i
-        )
+    for i in range(start, 87, -1):
+        soup = scrape(f"https://www.math.umass.edu/course-descriptions?semester_tid={i}")
 
-        for article in soup.select('div > article'):
+        for article in soup.select("div > article"):
             raw_title = text_of(
                 article.select_one("div[class='field-title clearfix'] > h3")
             )
@@ -193,46 +181,40 @@ def scrape_courses():
                 'description': course_description,
             }
 
-    for (id, freq) in get_course_frequency():
-        if id in course_map:
-            course_map[id]['frequency'] = freq
+    for (course_id, freq) in get_course_frequency():
+        if course_id in course_map:
+            course_map[course_id]['frequency'] = freq
 
     return course_map
+
+
+def div_get(div_element, class_name: str, selector="div > div > a"):
+    return div_element.select_one(f"div[class='{class_name}'] > {selector}")
 
 
 def retrieve_staff_information():
     staff_list = []
 
-    soup = scrape('https://www.cics.umass.edu/people/tenure-and-teaching')
-    for div_element in soup.select('div.view-content > div'):
-        def div_get(class_name, selector='div > div > a'):
-            return div_element.select_one(
-                f"div[class='%s'] > %s" % (class_name, selector)
-            )
+    soup = scrape("https://www.cics.umass.edu/people/tenure-and-teaching")
+    for div_element in soup.select("div.view-content > div"):
 
-        name_link = div_get(
-            'field field-name-title field-type-ds field-label-hidden'
-        )
+        name_link = div_get(div_element, "field field-name-title field-type-ds field-label-hidden")
         raw_name = unicode_text_of(name_link)
-        name_match = re.match(r"^([\w.\-' ]+),\s*([\w.\-' ]+)", raw_name)
+        name_match = re.match(r"^(%s),\s*(%s)" % (REGEXP_NAME_GROUP, REGEXP_NAME_GROUP), raw_name)
         if not name_match:
             print(raw_name)
 
         staff = {
             'names': [name_match.group(2) + ' ' + name_match.group(1)],
-            'title': text_of(div_get(
-                    'field field-name-field-position field-type-text field-label-hidden', 'div > div'
-                )),
-            'photo': div_element.select_one('img')['src'],
-            'email': text_of(div_get(
-                'field field-name-field-email field-type-email field-label-inline clearfix'
-            )),
+            'title': text_of(div_get(div_element, "field field-name-field-position field-type-text field-label-hidden", "div > div")),
+            'photo': div_element.select_one("img")['src'],
+            'email': text_of(div_get(div_element, "field field-name-field-email field-type-email field-label-inline clearfix")),
             'courses': []
         }
 
         website = name_link['href']
         if website[0] == '/':
-            staff['website'] = 'https://www.cics.umass.edu' + website
+            staff['website'] = "https://www.cics.umass.edu" + website
 
             staff_soup = scrape(staff['website'])
             additional_name = unicode_text_of(staff_soup.select_one("#page-title"))
@@ -243,8 +225,8 @@ def retrieve_staff_information():
             staff['website'] = website
 
         cics_name = staff['names'][0]
-        if cics_name in aliases:
-            staff['names'].append(aliases[cics_name])
+        if cics_name in aliases and (alias := aliases[cics_name]) not in staff['names']:
+            staff['names'].append(alias)
 
         staff_list.append(staff)
 
@@ -257,7 +239,7 @@ def get_academic_schedule():
     )
 
     semester_list = []
-    for header in soup.select('.field-item h3'):
+    for header in soup.select(".field-item h3"):
         semester_title = text_of(header)
 
         match = re.match(
@@ -269,28 +251,24 @@ def get_academic_schedule():
             continue
 
         year = match.group(3)
+        season = match.group(2)
         semester = {
-            'season': match.group(2),
+            'season': season,
             'year': year,
             'events': [],
         }
 
-        table = header.find_next('table')
-        for event_element in table.select('tr'):
-            event_desc = text_of(event_element.select_one('td:first-child'))
-            month_name = text_of(event_element.select_one('td:nth-child(3)'))
-            day_number = text_of(event_element.select_one('td:last-child'))
+        table = header.find_next("table")
+        for event_element in table.select("tr"):
+            event_desc = text_of(event_element.select_one("td:first-child"))
+            month_name = text_of(event_element.select_one("td:nth-child(3)"))
+            day_number = text_of(event_element.select_one("td:last-child"))
 
             adjusted_year = year
-            if season == 'winter'
-            and (month_name == 'January' or month_name == 'February'):
+            if season == 'winter' and (month_name == "January" or month_name == "February"):
                 adjusted_year = str(int(year) + 1)
 
-            native_time = datetime.strptime(f'%s %s %s 00:00:00' % (
-                day_number,
-                month_name,
-                adjusted_year
-            ), '%d %B %Y %H:%M:%S')
+            native_time = datetime.strptime(f'{day_number} {month_name} {adjusted_year} 00:00:00', "%d %B %Y %H:%M:%S")
             utc_time = local_zone.localize(native_time).astimezone(pytz.utc)
 
             if re.match(event_desc, 'First day of classes', re.IGNORECASE):

@@ -6,119 +6,100 @@ from pymongo import MongoClient
 import spire
 import web
 
+def is_name_short_for(a: str, b: str):
+    a_words = a.split(" ")
+    b_words = b.split(" ")
+
+    if b_words[0].find(a_words[0]) == 0 or a_words[0].find(b_words[0]) == 0:
+        b_remaining = set(b_words[1:])
+        a_remaining = set(a_words[1:])
+ 
+        return b_remaining.issubset(a_remaining) or a_remaining.issubset(b_remaining)
+
+
+def add_course_to_staff(staff_collection, course_staff, course_id):
+    for staff_name in course_staff:
+        if staff_collection.update_one({
+            "names": {"$in": [staff_name]}
+        }, {
+            "$push": {
+                "courses": course_id
+            }
+        }).modified_count != 0:
+            continue
+
+        cursor = staff_collection.aggregate([
+            {"$match": {"$text": {"$search": staff_name}}},
+            {
+                "$project": {
+                    "_score": {"$divide": [{"$meta": "textScore"}, {"$size": "$names"}]},
+                    "names": 1,
+                }
+            },
+            {"$sort": {"_score": -1}},
+        ])
+
+        accepted = None
+        for possible_staff in cursor:
+            if possible_staff['_score'] >= 1:
+                accepted = possible_staff
+                break
+
+            found = False
+            for name in possible_staff['names']:
+                if is_name_short_for(name, staff_name):
+                    found = True
+                    break
+
+            if found:
+                accepted = possible_staff
+                break
+
+        if accepted:
+            staff_collection.find_one_and_update({
+                "_id": accepted['_id']
+            }, {
+                "$push": {
+                    "courses": course_id,
+                    "names": staff_name
+                }
+            })
+
 
 def main(args):
     if len(args) != 3:
         print("Please supply a connection string and db-name.")
         return
 
-    # retrieve course information from CICS and Math department websites
-    course_map = web.scrape_courses()
-
-    # retrieve additional staff information from CICS website
-    staff_list = web.retrieve_staff_information()
-
-    # get sections, staff, and additional course information from spire
-    spire.scrape_additional_course_information(course_map)
-
-    # push information into db
     client = MongoClient(args[1])
     db = client[args[2]]
     semester_collection = db.semesters
     course_collection = db.courses
     staff_collection = db.staff
+
+    # retrieve course information from CICS and Math department websites
+    course_map = web.scrape_courses()
+    # get sections, staff, and additional course information from spire
+    spire.scrape_additional_course_information(course_map)
+
+    # push information into db
     course_collection.insert_many(course_map.values())
-    staff_collection.insert_many(staff_list)
+    course_map = None
+
+    # retrieve staff information from CICS website and push
+    staff_collection.insert_many(web.retrieve_staff_information())
+    # retrieve course information and push
     semester_collection.insert_many(web.get_academic_schedule())
 
-    course_collection.create_index([('id', pymongo.TEXT)])
-    staff_collection.create_index([('names', pymongo.TEXT)])
+    course_collection.create_index([("id", pymongo.TEXT)])
+    staff_collection.create_index([("names", pymongo.TEXT)])
 
     for course in course_collection.find():
-        if 'staff' not in course:
+        if "staff" not in course:
             continue
 
-        course_id = course['id']
-        course_staff = course['staff']
-        for staff_name in course_staff:
-            if staff_collection.update_one({
-                'names': {'$in': [staff_name]}
-            }, {
-                '$push': {
-                    'courses': course_id
-                }
-            }).modified_count != 0:
-                continue
-
-            cursor = staff_collection.find(
-                {'$text': {'$search': staff_name}},
-                {'score': {'$meta': 'textScore'}}
-            ).sort([('score', {'$meta': 'textScore'})])
-            entries = []
-            for staff in cursor:
-                score = staff['score']
-
-                entries.append({
-                    'staff': staff,
-                    'score': score / len(staff['names']),
-                })
-
-            if len(entries) != 0:
-                best = sorted(
-                    entries,
-                    key=lambda x: x['score'],
-                    reverse=True
-                )[0]
-                if best['score'] > 1:
-                    staff_collection.update_one({
-                        "_id": best['staff']['_id'],
-                    }, {
-                        "$push": {
-                            "courses": course_id,
-                            "names": staff_name
-                        },
-                    })
+        add_course_to_staff(staff_collection, course['staff'], course['id'])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv)
-
-'''
-interface Event {
-    date: Date;
-    description: string;
-}
-
-export type Season = 'Spring' | 'Summer' | 'Fall';
-export interface Semester {
-    season: Season;
-    year: number;
-    startDate: Date;
-    endDate: Date;
-    events: Array<Event>;
-}
-
-export interface Course {
-    subject: string;
-    id: string;
-    title: string;
-    description: string;
-    staff?: Array<string>;
-    website?: string;
-    frequency?: string;
-    career?: string;
-    units?: string;
-    gradingBasis?: string;
-    components?: string;
-    enrollmentRequirement?: string;
-}
-
-export interface Staff {
-    names: Array<string>;
-    title: string;
-    photo: string;
-    email: string;
-    website: string;
-    courses: Array<string>;
-}
-'''
