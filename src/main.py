@@ -100,11 +100,8 @@ def main(args):
             continue
 
         add_course_to_staff(staff_collection, course['staff'], course['id'])
-<<<<<<< HEAD
 
     client.close()
-=======
->>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
 
 
 if __name__ == "__main__":
