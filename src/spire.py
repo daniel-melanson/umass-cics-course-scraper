@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import os
 
-=======
->>>>>>> 9f8efc54a864f725c238f4a72c87a64979b47ddb
 from selenium.webdriver.common.by import By
 
 from selenium.webdriver.support.ui import WebDriverWait
