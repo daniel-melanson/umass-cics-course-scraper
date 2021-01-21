@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import spire
 import web
 
+
 def is_name_short_for(a: str, b: str):
     a_words = a.split(" ")
     b_words = b.split(" ")
@@ -16,6 +17,16 @@ def is_name_short_for(a: str, b: str):
         a_remaining = set(a_words[1:])
  
         return b_remaining.issubset(a_remaining) or a_remaining.issubset(b_remaining)
+
+
+def find_best_match_for(staff_name: str, cursor):
+    for possible_staff in cursor:
+        if possible_staff['_score'] >= 1:
+            return possible_staff
+
+        for name in possible_staff['names']:
+            if is_name_short_for(name, staff_name):
+                return possible_staff
 
 
 def add_course_to_staff(staff_collection, course_staff, course_id):
@@ -40,23 +51,7 @@ def add_course_to_staff(staff_collection, course_staff, course_id):
             {"$sort": {"_score": -1}},
         ])
 
-        accepted = None
-        for possible_staff in cursor:
-            if possible_staff['_score'] >= 1:
-                accepted = possible_staff
-                break
-
-            found = False
-            for name in possible_staff['names']:
-                if is_name_short_for(name, staff_name):
-                    found = True
-                    break
-
-            if found:
-                accepted = possible_staff
-                break
-
-        if accepted:
+        if (accepted := find_best_match_for(staff_name, cursor)):
             staff_collection.find_one_and_update({
                 "_id": accepted['_id']
             }, {
