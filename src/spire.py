@@ -189,3 +189,5 @@ def scrape_additional_course_information(course_map):
             click_spire_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
 
         click_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
+
+    driver.quit()
