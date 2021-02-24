@@ -93,6 +93,8 @@ def wait_for_elements(driver: WebDriver, attrib: str, value: str) -> WebElement:
 
 
 def click_element(driver: WebDriver, attrib: str, value: str) -> None:
+    wait_for_element(driver, attrib, value)
+    
     try:
         WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((attrib, value))
@@ -187,7 +189,5 @@ def scrape_additional_course_information(course_map):
             click_spire_element(driver, By.ID, link_id)
             scrape_course_page(driver, course_map[course_id])
             click_spire_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
-
-        click_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
 
     driver.quit()
