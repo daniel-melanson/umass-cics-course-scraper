@@ -172,7 +172,7 @@ def scrape_additional_course_information(course_map):
 
         click_spire_element(driver, By.ID, category_link_id)
 
-        course_table = wait_for_element(driver, By.CSS_SELECTOR, "table.PSLEVEL2GRID")
+        course_table = wait_for_element(driver, By.CSS_SELECTOR, "table[id^=COURSE_LIST]")
 
         def id_map(link_element, cat=category):
             return (cat + " " + text_of(link_element).upper(),
@@ -180,7 +180,7 @@ def scrape_additional_course_information(course_map):
 
         course_link_id_list = list(map(
             id_map,
-            course_table.find_elements_by_css_selector("td[align=center] > div > span > a")
+            course_table.find_elements_by_css_selector("a[id^=CRSE_NBR]")
         ))
         course_link_id_list = list(filter(
             lambda ids: ids[0] in course_map,
@@ -191,5 +191,7 @@ def scrape_additional_course_information(course_map):
             click_spire_element(driver, By.ID, link_id)
             scrape_course_page(driver, course_map[course_id])
             click_spire_element(driver, By.ID, "DERIVED_SAA_CRS_RETURN_PB")
+
+        click_spire_element(driver, By.ID, category_link_id)
 
     driver.quit()
