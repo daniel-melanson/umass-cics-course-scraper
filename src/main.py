@@ -67,7 +67,7 @@ def main(args):
         print("Please supply a db-name.")
         return
 
-    client = MongoClient(os.environ['MONGO_CONNECTION_STRING'])
+    client = MongoClient(os.environ['MONGO_CONNECTION_STRING'].replace("DATABASE", args[1]))
     db = client[args[1]]
     semester_collection = db.semesters
     course_collection = db.courses
