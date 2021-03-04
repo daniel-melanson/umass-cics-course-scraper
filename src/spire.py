@@ -27,6 +27,9 @@ category_list = [
     "STATISTC",
 ]
 
+def is_env_true(key):
+    return os.environ.get(key, "False").upper() == "TRUE"
+
 
 def find(f, lst):
     for e in lst:
@@ -44,7 +47,7 @@ def text_of(elem: WebElement):
 
 
 def create_driver() -> WebDriver:
-    if os.environ.get('HEADLESS'):
+    if is_env_true('HEADLESS'):
         opts = Options()
         opts.headless = True
 
@@ -62,7 +65,7 @@ def wait_until_not_processing(driver: WebDriver):
             break
         except WebDriverException:
             print("Spire seems to be a little slow, you should try again later.")
-            if os.environ.get("RETRY") != "TRUE":
+            if is_env_true("RETRY"):
                 exit(-1)
 
 
