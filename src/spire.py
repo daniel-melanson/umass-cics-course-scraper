@@ -15,7 +15,6 @@ import re
 
 # SETTINGS
 
-headless = True
 wait_time = 2
 
 # CONSTANTS
@@ -45,7 +44,7 @@ def text_of(elem: WebElement):
 
 
 def create_driver() -> WebDriver:
-    if headless:
+    if os.environ.get('HEADLESS'):
         opts = Options()
         opts.headless = True
 
@@ -63,7 +62,7 @@ def wait_until_not_processing(driver: WebDriver):
             break
         except WebDriverException:
             print("Spire seems to be a little slow, you should try again later.")
-            if os.environ['retry'] != "TRUE":
+            if os.environ.get("RETRY") != "TRUE":
                 exit(-1)
 
 
