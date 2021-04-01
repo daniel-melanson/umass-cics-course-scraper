@@ -146,18 +146,20 @@ def scrape_courses():
     first_option = soup.select_one("#edit-semester-tid > option:first-child")
 
     start = int(first_option['value'])
-    for i in range(start, 87, -1):
+    for i in range(start - 10, start + 1):
         soup = scrape(f"https://www.math.umass.edu/course-descriptions?semester_tid={i}")
 
         for article in soup.select("div > article"):
             raw_title = text_of(
-                article.select_one("div[class='field-title clearfix'] > h3")
+                article.select_one("div[class^='field-title']")
             )
+
             title_match = re.match(
                 r'^(MATH|STAT|HONORS)\s*(\w+)(\.\d*)?:\s*([\w -:]+)',
                 raw_title,
                 re.IGNORECASE
             )
+
             if not title_match or title_match.group(1) == 'HONORS':
                 continue
 
@@ -171,7 +173,7 @@ def scrape_courses():
 
             course_title = title_match.group(4)
             course_description = text_of(article.select_one(
-                "div[class='field-course-descr-description inline clearfix'] > div > p"
+                "div[class^='field-course-descr-description']"
             ))
 
             course_map[course_id] = {
