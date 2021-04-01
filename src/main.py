@@ -4,6 +4,7 @@ import os
 import pymongo
 from pymongo import MongoClient
 
+import re
 import spire
 import web
 
@@ -62,6 +63,16 @@ def add_course_to_staff(staff_collection, course_staff, course_id):
             })
 
 
+def reg_replace(match: str, pattern: str, replace: str, flags) -> str:
+    return re.sub(
+        pattern,
+        replace,
+        match,
+        flags=flags
+    )
+
+
+
 def main(args):
     if len(args) != 2:
         print("Please supply a db-name.")
@@ -75,6 +86,34 @@ def main(args):
 
     # retrieve course information from CICS and Math department websites
     course_map = web.scrape_courses()
+    
+    # use course description pre reqs
+    for (_, course) in course_map.items():
+        description = course['description']
+
+        prereq_match = re.search(
+            r"prerequisite(s)?: .+",
+            description,
+            flags=re.I
+        )
+
+        if prereq_match:
+            description = description.replace(prereq_match.group(), "")
+
+            course['enrollmentRequirement'] = reg_replace(
+                prereq_match.group(),
+                r" \d credits\.",
+                "",
+                flags=re.M | re.I
+            )
+
+        course['description'] = reg_replace(
+            description,
+            r" \d credits\.",
+            "",
+            flags=re.M | re.I
+        )
+
     # get sections, staff, and additional course information from spire
     spire.scrape_additional_course_information(course_map)
 

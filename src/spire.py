@@ -130,7 +130,7 @@ def find_all_with_id(driver: WebDriver, base_id):
             break
         i = i + 1
 
-    return ", ".join(found)
+    return ", ".join(found), found
 
 
 def scrape_course_page(driver: WebDriver, course):
@@ -143,9 +143,17 @@ def scrape_course_page(driver: WebDriver, course):
         ("enrollmentRequirement", "DERIVED_CRSECAT_DESCR254A$"),
     ]
     for (attrib, elem_id) in attribs:
-        text = find_all_with_id(driver, elem_id)
+        text, found = find_all_with_id(driver, elem_id)
         if attrib == "gradingBasis":
             course[attrib] = text.replace("Grad Ltr Grading", "Graduate Letter Grading")
+        elif attrib == "enrollmentRequirement":
+            for req in found:
+                if not req.startswith("Pre"):
+                    if attrib in course:
+                        course[attrib] += ", " + req
+                    else:
+                        course[attrib] = req
+
         elif len(text) > 0:
             course[attrib] = text
 
