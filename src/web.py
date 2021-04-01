@@ -127,6 +127,7 @@ def scrape_courses():
                     course = {
                         'subject': course_subject,
                         'id': course_id,
+                        'number': course_id.split()[1],
                         'title': course_title,
                         'description': course_description,
                         'staff': session_staff,
@@ -179,6 +180,7 @@ def scrape_courses():
             course_map[course_id] = {
                 'subject': course_subject,
                 'id': course_id,
+                'number': course_id.split()[1],
                 'title': course_title,
                 'description': course_description,
             }
