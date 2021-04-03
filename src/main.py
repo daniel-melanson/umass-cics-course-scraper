@@ -92,7 +92,7 @@ def main(args):
         description = course['description']
 
         prereq_match = re.search(
-            r"prerequisite(s)?: .+",
+            r"prerequisite(s)?:.+",
             description,
             flags=re.I
         )
