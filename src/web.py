@@ -196,8 +196,6 @@ def scrape_courses():
                     flags=re.I
                 ).strip()
 
-                print(course['enrollmentRequirement'])
-
             course_map[course_id] = course
 
     for (course_id, freq) in get_course_frequency():
