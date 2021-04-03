@@ -177,13 +177,28 @@ def scrape_courses():
                 "div[class^='field-course-descr-description']"
             ))
 
-            course_map[course_id] = {
+            course = {
                 'subject': course_subject,
                 'id': course_id,
                 'number': course_id.split()[1],
                 'title': course_title,
                 'description': course_description,
             }
+
+            course_prereqs = article.select_one(
+                "div[class^='field-course-descr-prereq']"
+            )
+            if course_prereqs:
+                course['enrollmentRequirement'] = "Prerequisites: " + re.sub(
+                    r"\s*prereq(uisite)?(s)?(:)?",
+                    "",
+                    text_of(course_prereqs),
+                    flags=re.I
+                ).strip()
+
+                print(course['enrollmentRequirement'])
+
+            course_map[course_id] = course
 
     for (course_id, freq) in get_course_frequency():
         if course_id in course_map:
