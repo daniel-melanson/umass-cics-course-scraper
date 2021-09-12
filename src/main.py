@@ -32,35 +32,38 @@ def find_best_match_for(staff_name: str, cursor):
 
 def add_course_to_staff(staff_collection, course_staff, course_id):
     for staff_name in course_staff:
-        if staff_collection.update_one({
+        staff = staff_collection.find_one({
             "names": {"$in": [staff_name]}
-        }, {
-            "$push": {
-                "courses": course_id
-            }
-        }).modified_count != 0:
-            continue
+        })
 
-        cursor = staff_collection.aggregate([
-            {"$match": {"$text": {"$search": staff_name}}},
-            {
-                "$project": {
-                    "_score": {"$divide": [{"$meta": "textScore"}, {"$size": "$names"}]},
-                    "names": 1,
-                }
-            },
-            {"$sort": {"_score": -1}},
-        ])
+        if not staff:
+            cursor = staff_collection.aggregate([
+                {"$match": {"$text": {"$search": staff_name}}},
+                {
+                    "$project": {
+                        "_score": {"$divide": [{"$meta": "textScore"}, {"$size": "$names"}]},
+                        "names": 1,
+                    }
+                },
+                {"$sort": {"_score": -1}},
+            ])
 
-        if (accepted := find_best_match_for(staff_name, cursor)):
-            staff_collection.find_one_and_update({
-                "_id": accepted['_id']
-            }, {
-                "$push": {
-                    "courses": course_id,
-                    "names": staff_name
+            staff = find_best_match_for(staff_name, cursor)
+
+        if staff:
+            operation = {
+                    '$push': {
+                        'courses': course_id
+                    }
+                } if 'courses' in staff else {
+                    '$set': {
+                        'courses': [course_id]
+                    }
                 }
-            })
+
+            staff_collection.update_one({
+                '_id': staff['_id']
+            }, operation)
 
 
 def reg_replace(match: str, pattern: str, replace: str, flags) -> str:
@@ -70,7 +73,6 @@ def reg_replace(match: str, pattern: str, replace: str, flags) -> str:
         match,
         flags=flags
     )
-
 
 
 def main(args):

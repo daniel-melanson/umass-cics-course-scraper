@@ -205,31 +205,37 @@ def scrape_courses():
     return course_map
 
 
-def div_get(div_element, class_name: str, selector="div > div > a"):
-    return div_element.select_one(f"div[class='{class_name}'] > {selector}")
+def div_get(div_element, class_name: str, selector=None):
+    sel = f"div[class='views-field views-field-{class_name}']" + (f" > {selector}" if selector else "")
+    return div_element.select_one(sel)
 
 
 def retrieve_staff_information():
     staff_list = []
 
-    soup = scrape("https://www.cics.umass.edu/people/tenure-and-teaching")
-    for div_element in soup.select("div.view-content > div"):
-
-        name_link = div_get(div_element, "field field-name-title field-type-ds field-label-hidden")
-        raw_name = unicode_text_of(name_link)
+    soup = scrape("https://www.cics.umass.edu/people/all-faculty-staff")
+    for div_element in soup.select("div.view-content > div.clearfix > div"):
+        name_element = div_get(div_element, "title", "span > a")
+        raw_name = unicode_text_of(name_element)
         name_match = re.match(r"^(%s),\s*(%s)" % (REGEXP_NAME_GROUP, REGEXP_NAME_GROUP), raw_name)
-        if not name_match:
-            print(raw_name)
+        if not name_match: 
+            raise RuntimeError(raw_name)
 
         staff = {
-            'names': [name_match.group(2) + ' ' + name_match.group(1)],
-            'title': text_of(div_get(div_element, "field field-name-field-position field-type-text field-label-hidden", "div > div")),
-            'photo': div_element.select_one("img")['src'],
-            'email': text_of(div_get(div_element, "field field-name-field-email field-type-email field-label-inline clearfix")),
-            'courses': []
+            'names': [f'{name_match.group(2)} {name_match.group(1)}'],
+            'title': text_of(div_get(div_element, "field-position")),
+            'email': text_of(div_get(div_element, "field-email", "a")),
         }
 
-        website = name_link['href']
+        phone_element = div_get(div_element, "field-phone")
+        if phone_element:
+            staff['phone'] = text_of(phone_element)[3:]
+
+        location_element= div_get(div_element, "field-location", "span.field-content")
+        if location_element:
+            staff['office'] = text_of(location_element)
+
+        website = name_element['href']
         if website[0] == '/':
             staff['website'] = "https://www.cics.umass.edu" + website
 
@@ -238,6 +244,11 @@ def retrieve_staff_information():
             names = staff['names']
             if additional_name not in names:
                 names.append(additional_name)
+
+            img_element = staff_soup.select_one("div.content > div > div > img")
+            if img_element:
+                staff['photo'] = img_element['src']
+
         else:
             staff['website'] = website
 
