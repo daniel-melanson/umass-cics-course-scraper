@@ -94,7 +94,7 @@ def main(args):
         description = course['description']
 
         prereq_match = re.search(
-            r"prerequisite(s)?:.+",
+            r"(undergraduate)? prerequisite(s)?:.+",
             description,
             flags=re.I
         )
@@ -104,7 +104,7 @@ def main(args):
 
             course['enrollmentRequirement'] = reg_replace(
                 prereq_match.group(),
-                r" \d credits\.",
+                r" \d credits(\.)?",
                 "",
                 flags=re.M | re.I
             )
