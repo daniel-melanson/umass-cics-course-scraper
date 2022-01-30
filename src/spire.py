@@ -28,7 +28,7 @@ category_list = [
 ]
 
 def is_env_true(key):
-    return os.environ.get(key, "False").upper() == "TRUE"
+    return os.environ.get(key, "FALSE").upper() == "TRUE"
 
 
 def find(f, lst):
@@ -65,7 +65,7 @@ def wait_until_not_processing(driver: WebDriver):
             break
         except WebDriverException:
             print("Spire seems to be a little slow, you should try again later.")
-            if is_env_true("RETRY"):
+            if not is_env_true("RETRY"):
                 exit(-1)
 
 

@@ -288,9 +288,10 @@ def get_academic_schedule():
 
         table = header.find_next("table")
         for event_element in table.select("tr"):
-            event_desc = text_of(event_element.select_one("td:first-child"))
-            month_name = text_of(event_element.select_one("td:nth-child(3)"))
-            day_number = text_of(event_element.select_one("td:last-child"))
+            content_children = list(filter(lambda child: child and len(text_of(child)) > 0 , event_element.children))
+            event_desc = text_of(content_children[0])
+            month_name = text_of(content_children[2])
+            day_number = text_of(content_children[3])
 
             adjusted_year = year
             if season == 'winter' and (month_name == "January" or month_name == "February"):
