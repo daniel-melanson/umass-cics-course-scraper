@@ -51,9 +51,9 @@ def parse_args(args: list[str]) -> Flags:
 
                 filePath = flag[9:].strip()
                 if not filePath.endswith('.json') or not path.isfile(filePath):
-                    abort('Invalid dataJon path.')
+                    abort('Invalid dataJson path.')
         else:
-            abort('Unrecognized flags.')
+            abort(f'Unrecognized flag: {arg}')
 
     return Flags(headless, verbose, json, dataJson, mongo)
 
