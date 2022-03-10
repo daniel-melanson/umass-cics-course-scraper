@@ -6,8 +6,8 @@ import sys
 from datetime import datetime
 from os import path
 from typing import NamedTuple, Union
-from mongo.mongo import push_info
 
+from mongo.mongo import push_info
 from normalizer.normalizer import normalize_info
 from scraper.scraper import scrape_raw_info
 
@@ -17,8 +17,8 @@ logger = logging.getLogger("log")
 class Flags(NamedTuple):
     headless: bool
     verbose: bool
-    json: bool
-    dataJson: Union[str, None]
+    dump: bool
+    json: Union[str, None]
     mongo: str
 
 
@@ -29,33 +29,35 @@ def abort(msg: str):
 def parse_args(args: list[str]) -> Flags:
     headless = False
     verbose = False
-    json = False
-    dataJson = None
+    dump = False
+    json = None
     mongo = None
 
     for i in range(1, len(args)):
         arg = args[i].lower()
 
-        if arg.startswith('--'):
+        if arg.startswith("--"):
             flag = arg[2:]
-            if flag == 'headless':
+            if flag == "headless":
                 headless = True
-            elif flag == 'json':
-                if dataJson is not None:
-                    abort('`--dataJson` is mutually exclusive with `--json`.')
+            elif flag == "dump":
+                if json is not None:
+                    abort("`--dump` is mutually exclusive with `--json`.")
 
-                json = True
-            elif flag.startswith('dataJson='):
-                if json:
-                    abort('`--json` is mutually exclusive with `--dataJson`.')
+                dump = True
+            elif flag.startswith("dataJson="):
+                if dump:
+                    abort("`--json` is mutually exclusive with `--dump`.")
 
                 filePath = flag[9:].strip()
-                if not filePath.endswith('.json') or not path.isfile(filePath):
-                    abort('Invalid dataJson path.')
-        else:
-            abort(f'Unrecognized flag: {arg}')
+                if not path.isfile(filePath):
+                    abort(f"Invalid json path: {filePath}")
 
-    return Flags(headless, verbose, json, dataJson, mongo)
+                json = filePath
+        else:
+            abort(f"Unrecognized flag: {arg}")
+
+    return Flags(headless, verbose, dump, json, mongo)
 
 
 def main(args: list[str]):
@@ -64,32 +66,63 @@ def main(args: list[str]):
     if not flags.verbose:
         logger.addFilter()
 
-    if flags.dataJson:
+    logger.info("Starting...")
+    if flags.json:
+        logger.info("--json supplied. Attempting to open %s", flags.json)
         try:
-            file = open(flags.dataJson, 'r')
+            file = open(flags.json, "r")
         except IOError as e:
-            abort(f'Unable to open `.json` file.\n{e}')
+            abort(f"Unable to open `.json` file.\n{e}")
 
-        data = json.load(file)
+        logger.info("File opened. Attempting to load.")
+        try:
+            data = json.load(file)
+        except RuntimeError as e:
+            abort(f"Unable to load `.json` file.\n{e}")
+
+        file.close()
+        logger.info("Successfully loaded raw data.")
     else:
+        logger.info("Beginning scraping routine...")
         try:
             data = scrape_raw_info()
         except RuntimeError as e:
-            abort(f'Failed scrape raw info.{e}')
+            abort(f"Failed scrape raw info.{e}")
 
-        if flags.json:
+        logger.info("Scraping routine successfully finished.")
+        if flags.dump:
+            logger.info("Dumping scraped info..")
+            file_name = f"scrape-results-{datetime.now().isoformat()}.json"
             try:
-                file = open(f'scrape-results-{datetime.now().isoformat()}', 'w')
+                file = open(file_name, "w")
 
                 json.dump(data, file)
                 file.close()
             except IOError as e:
-                abort(f'Unable to write JSON.\n{e}')
+                abort(f"Unable to write JSON.\n{e}")
 
-    (course, staff) = normalize_info(data[:2])
+            logger.info("Dumped raw info to %s.", file_name)
 
-    push_info(course, staff, data[2])
+    logger.info("Beginning normalizing routine...")
+    try:
+        (course, staff) = normalize_info(data[:2])
+    except RuntimeError as e:
+        abort(f"Unable to normalize staff and course information.\n{e}")
+    logger.info("Normalizing routine successfully finished.")
+
+    if flags.mongo:
+        logger.info("Beginning uploading routine.")
+        try:
+            push_info(flags.mongo, (course, staff, data[2]))
+        except RuntimeError as e:
+            abort(f"Unable to upload information.\n{e}")
+
+        logger.info("Uploading routine successfully finished.")
+    else:
+        logger.info("--mongo not supplied. Skipping uploading routine.")
+
+    logger.info("Done.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv)
