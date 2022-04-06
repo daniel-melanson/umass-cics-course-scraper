@@ -1,5 +1,6 @@
 from time import sleep
 from typing import Union
+import logger
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -16,16 +17,23 @@ def clean_text(s: str):
 
 
 def fetch_soup(url: str) -> Union[BeautifulSoup, None]:
+    logger.info("Fetching %s...", url)
     attempts = 0
-    while attempts <= 5:
+    while True:
         try:
             res = requests.get(url)
-            return BeautifulSoup(res.content, "html5lib")
-        except requests.ConnectionError:
+            logger.info("Successfully fetched %s.", url)
+            break
+        except Exception as e:
             attempts += 1
-            sleep(5)
+            if attempts < 5:
+                logger.exception("Failed to fetch: %s.", e)
+                logger.info("Sleeping...")
+                sleep(5)
+            else:
+                raise RuntimeError("Unable to fetch %s.", url)
 
-    return None
+    return BeautifulSoup(res.content, "html5lib")
 
 
 def get_tag_text(tag: Tag):

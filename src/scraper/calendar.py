@@ -21,11 +21,11 @@ class Semester(NamedTuple):
 eastern = pytz.timezone("US/Eastern")
 
 
-def scrape_academic_schedule() -> Union[list[Semester], None]:
+def scrape_academic_schedule() -> list[Semester]:
     soup = fetch_soup("https://www.umass.edu/registrar/calendars/academic-calendar")
 
     if soup is None:
-        return None
+        raise RuntimeError()
 
     semester_list = []
     for header in soup.select(".field-item h3"):
