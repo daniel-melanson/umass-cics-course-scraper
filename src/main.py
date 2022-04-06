@@ -90,7 +90,7 @@ def main(args: list[str]):
             data = scrape_raw_info()
         except RuntimeError as e:
             logger.error("Failed while scraping. %s", e)
-            abort(f"Failed scrape raw info.{e}")
+            abort("Failed scrape raw info.")
 
         logger.info("Scraping routine successfully finished.")
         if flags.dump:
