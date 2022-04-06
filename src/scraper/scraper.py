@@ -2,6 +2,7 @@ from typing import NamedTuple, Tuple, Union
 
 from scraper.calendar import Semester
 
+
 class RawCourse(NamedTuple):
     id: str
 

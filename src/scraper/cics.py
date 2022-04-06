@@ -1,5 +1,6 @@
 from typing import NamedTuple, Optional
 
+
 class RawStaff(NamedTuple):
     names: list[str]
     title: Optional[str]

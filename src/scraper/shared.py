@@ -6,11 +6,11 @@ from bs4 import BeautifulSoup, Tag
 
 
 def clean_text(s: str):
-    for r in ['\xa0', '\n', '\t']:
-        s = s.replace(r, ' ')
+    for r in ["\xa0", "\n", "\t"]:
+        s = s.replace(r, " ")
 
-    while '  ' in s:
-        s = s.replace("  ", ' ')
+    while "  " in s:
+        s = s.replace("  ", " ")
 
     return s.strip()
 

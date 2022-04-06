@@ -10,6 +10,13 @@ html5lib = "*"
 pytz = "*"
 
 [dev-packages]
+pylint = "*"
+black = "*"
 
 [requires]
 python_version = "3.10"
+
+[scripts]
+lint = "pylint --rcfile=.pylintrc ./src/*"
+format = "black --line-length 120 ./src/"
+format-check = "black --check --line-length 120 ./src/"
