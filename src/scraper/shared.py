@@ -29,7 +29,7 @@ def fetch_soup(url: str) -> Union[BeautifulSoup, None]:
         except Exception as e:
             attempts += 1
             if attempts < 5:
-                logger.exception("Failed to fetch: %s.", e)
+                logger.exception("Failed to fetch %s: %s.", url, e)
                 logger.info("Sleeping...")
                 sleep(5)
             else:
