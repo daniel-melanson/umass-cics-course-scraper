@@ -11,7 +11,7 @@ from mongo.mongo import push_info
 from normalizer.normalizer import normalize_info
 from scraper.scraper import scrape_raw_info
 
-logger = logging.getLogger("log")
+logger = logging.getLogger()
 
 
 class Flags(NamedTuple):

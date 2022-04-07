@@ -1,9 +1,11 @@
 from time import sleep
 from typing import Union
-import logger
 
+import logging
 import requests
 from bs4 import BeautifulSoup, Tag
+
+logger = logging.getLogger()
 
 
 def clean_text(s: str):
