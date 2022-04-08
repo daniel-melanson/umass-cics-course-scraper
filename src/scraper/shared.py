@@ -5,7 +5,8 @@ import logging
 import requests
 from bs4 import BeautifulSoup, Tag
 
-logger = logging.getLogger()
+
+log = logging.getLogger(__name__)
 
 
 def clean_text(s: str):
@@ -19,18 +20,18 @@ def clean_text(s: str):
 
 
 def fetch_soup(url: str) -> Union[BeautifulSoup, None]:
-    logger.info("Fetching %s...", url)
+    log.info("Fetching %s...", url)
     attempts = 0
     while True:
         try:
             res = requests.get(url)
-            logger.info("Successfully fetched %s.", url)
+            log.info("Successfully fetched %s.", url)
             break
         except Exception as e:
             attempts += 1
             if attempts < 5:
-                logger.exception("Failed to fetch %s: %s.", url, e)
-                logger.info("Sleeping...")
+                log.exception("Failed to fetch %s: %s.", url, e)
+                log.info("Sleeping...")
                 sleep(5)
             else:
                 raise RuntimeError("Unable to fetch %s.", url)
