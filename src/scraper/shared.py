@@ -2,6 +2,7 @@ import logging
 from time import sleep
 from typing import Union
 
+from unidecode import unidecode
 import requests
 from bs4 import BeautifulSoup, Tag
 
@@ -38,5 +39,7 @@ def fetch_soup(url: str) -> Union[BeautifulSoup, None]:
     return BeautifulSoup(res.content, "html5lib")
 
 
-def get_tag_text(tag: Tag):
-    return clean_text(tag.text)
+def get_tag_text(tag: Tag, decode=False):
+    text = clean_text(tag.text)
+
+    return unidecode(text) if decode else text
