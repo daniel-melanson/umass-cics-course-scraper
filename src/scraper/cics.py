@@ -1,6 +1,6 @@
+import logging
 import re
 from typing import NamedTuple, Optional
-import logging
 
 from scraper.shared import fetch_soup, get_tag_text
 

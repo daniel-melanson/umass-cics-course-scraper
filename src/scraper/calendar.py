@@ -1,12 +1,11 @@
+import logging
 import re
 from datetime import datetime
 from typing import NamedTuple
 
-import logging
 import pytz
 
 from scraper.shared import fetch_soup, get_tag_text
-
 
 log = logging.getLogger(__name__)
 

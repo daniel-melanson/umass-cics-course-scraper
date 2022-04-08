@@ -1,10 +1,9 @@
+import logging
 from time import sleep
 from typing import Union
 
-import logging
 import requests
 from bs4 import BeautifulSoup, Tag
-
 
 log = logging.getLogger(__name__)
 

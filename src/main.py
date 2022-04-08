@@ -2,7 +2,6 @@
 
 import json
 import logging
-from stat import filemode
 import sys
 from datetime import datetime
 from os import path
@@ -17,7 +16,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     level=logging.DEBUG,
     datefmt="%m/%d/%Y",
-    filemode="w"
+    filemode="w",
 )
 log = logging.getLogger(__name__)
 
@@ -81,15 +80,15 @@ def main(args: list[str]):
         log.info("--json supplied. Attempting to open %s.", flags.json)
         try:
             file = open(flags.json, "r")
-        except IOError as e:
-            log.error("Failed to open JSON file. %s", e)
+        except Exception as e:
+            log.exception("Failed to open JSON file: %s", e)
             abort("Unable to open `.json` file.")
 
         log.info("File opened. Attempting to load.")
         try:
             data = json.load(file)
-        except RuntimeError as e:
-            log.error("Failed to load JSON. %s", e)
+        except Exception as e:
+            log.exception("Failed to load JSON: %s", e)
             abort("Unable to load `.json` file.")
 
         file.close()
@@ -111,8 +110,8 @@ def main(args: list[str]):
 
                 json.dump(data, file)
                 file.close()
-            except IOError as e:
-                log.error("Unable to dump data. %s", e)
+            except Exception as e:
+                log.error("Unable to dump data: %s", e)
                 print("Unable to write JSON. Skipping.")
 
             log.info("Dumped raw info to %s.", file_name)
@@ -120,8 +119,8 @@ def main(args: list[str]):
     log.info("Beginning normalizing routine...")
     try:
         (course, staff) = normalize_info(data[:2])
-    except RuntimeError as e:
-        log.error("Filed while normalizing. %s", e)
+    except Exception as e:
+        log.exception("Failed while normalizing: %s", e)
         abort("Unable to normalize staff and course information.")
 
     log.info("Normalizing routine successfully finished.")
@@ -130,8 +129,8 @@ def main(args: list[str]):
         log.info("Beginning uploading routine.")
         try:
             push_info(flags.mongo, (course, staff, data[2]))
-        except RuntimeError as e:
-            log.error("Failed pushing information. %s", e)
+        except Exception as e:
+            log.exception("Failed pushing information: %s", e)
             abort("Unable to upload information.")
 
         log.info("Uploading routine successfully finished.")
