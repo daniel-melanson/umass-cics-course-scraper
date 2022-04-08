@@ -45,7 +45,7 @@ def scrape_academic_schedule() -> list[Semester]:
         semester = Semester(season=season, year=year, startDate=None, endDate=None, events=[])
 
         log.debug("Initalized semester: %s", semester)
-        log.info("Scraping events for %s %s", semester["season"], semester["year"])
+        log.info("Scraping events for %s %s...", semester["season"], semester["year"])
 
         table = header.find_next("table")
         for event_element in table.select("tr"):
@@ -89,9 +89,9 @@ def scrape_academic_schedule() -> list[Semester]:
             log.debug("Adding event: %s", event)
             semester["events"].append(event)
 
-        log.info("Events scraped.")
-        log.debug("Adding semester %s", semester)
+        log.info("Events scraped. Adding semester.")
         semester_list.append(semester)
+        log.debug("Added semester %s", semester)
 
     log.info("Semesters scraped.")
     return semester_list
