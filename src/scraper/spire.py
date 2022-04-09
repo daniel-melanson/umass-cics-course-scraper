@@ -1,9 +1,9 @@
-from typing import NamedTuple
+from typing import TypedDict
 
 
-class SpireCourse(NamedTuple):
+class RawCourse(TypedDict):
     id: str
 
 
-def scrape_course_list() -> SpireCourse:
+def scrape_course_list() -> list[RawCourse]:
     return None

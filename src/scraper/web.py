@@ -31,28 +31,25 @@ def scrape_course_frequency() -> dict:
     def cics_course_frequency(tag: Tag):
         course_subject = get_tag_text(tag.select_one("td:first-child"))
         course_id = get_tag_text(tag.select_one("td:nth-child(2)"))
-        return (
-            f"{course_subject} {course_id}".upper(),
-            get_tag_text(tag.select_one("td:last-child"))
-        )
+        return (f"{course_subject} {course_id}".upper(), get_tag_text(tag.select_one("td:last-child")))
 
     def math_course_frequency(elem: Tag):
         freq = get_tag_text(elem.select_one("td:last-child"))
         if freq == "Fall/Spring/Summer":
             freq = "Fall, Spring, and Summer"
         else:
-            freq = freq.replace('/', " and ").replace("  ", ' ')
+            freq = freq.replace("/", " and ").replace("  ", " ")
 
-        return (
-            get_tag_text(elem.select_one("td:first-child")).upper(),
-            freq
-        )
-
+        return (get_tag_text(elem.select_one("td:first-child")).upper(), freq)
 
     course_frequency = {}
     for (url, selector, scraper) in [
-        ("https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html", "tbody > tr:not(:first-child)", cics_course_frequency),
-        ("https://www.math.umass.edu/course-offerings", "tbody > tr", math_course_frequency)
+        (
+            "https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html",
+            "tbody > tr:not(:first-child)",
+            cics_course_frequency,
+        ),
+        ("https://www.math.umass.edu/course-offerings", "tbody > tr", math_course_frequency),
     ]:
         soup = fetch_soup(url)
         tag_list = soup.select(selector)
