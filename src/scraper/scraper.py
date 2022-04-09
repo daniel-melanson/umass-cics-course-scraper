@@ -1,6 +1,7 @@
 from typing import NamedTuple, Tuple, Union
 
 from scraper.calendar import Semester, scrape_academic_schedule
+from scraper.cics import scrape_raw_staff_list
 
 
 class RawCourse(NamedTuple):
@@ -12,4 +13,4 @@ class RawStaff(NamedTuple):
 
 
 def scrape_raw_info() -> Tuple[RawCourse, RawStaff, list[Semester]]:
-    return (None, None, scrape_academic_schedule())
+    return (None, scrape_raw_staff_list(), None)
