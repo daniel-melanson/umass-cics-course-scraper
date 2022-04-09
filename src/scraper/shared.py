@@ -27,14 +27,14 @@ def fetch_soup(url: str) -> Union[BeautifulSoup, None]:
             res = requests.get(url)
             log.info("Successfully fetched %s.", url)
             break
-        except Exception as e:
+        except Exception as exception:
             attempts += 1
             if attempts < 5:
-                log.exception("Failed to fetch %s: %s.", url, e)
+                log.exception("Failed to fetch %s: %s.", url, exception)
                 log.info("Sleeping...")
                 sleep(5)
             else:
-                raise RuntimeError("Unable to fetch %s.", url)
+                raise RuntimeError(f"Unable to fetch: {url}")
 
     return BeautifulSoup(res.content, "html5lib")
 

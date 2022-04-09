@@ -1,6 +1,8 @@
 import logging
 import re
-from typing import NamedTuple, Optional, TypedDict
+from typing import Optional, TypedDict
+
+from bs4 import Tag
 
 from scraper.shared import fetch_soup, get_tag_text
 
@@ -22,13 +24,46 @@ class RawStaff(TypedDict):
     courses: Optional[list[str]]
 
 
-class CourseFrequency(NamedTuple):
-    id: str
-    frequency: str
+def scrape_course_frequency() -> dict:
+    log.info("Scraping course frequency...")
+    soup = fetch_soup("https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html")
+
+    def cics_course_frequency(tag: Tag):
+        course_subject = get_tag_text(tag.select_one("td:first-child"))
+        course_id = get_tag_text(tag.select_one("td:nth-child(2)"))
+        return (
+            f"{course_subject} {course_id}".upper(),
+            get_tag_text(tag.select_one("td:last-child"))
+        )
+
+    def math_course_frequency(elem: Tag):
+        freq = get_tag_text(elem.select_one("td:last-child"))
+        if freq == "Fall/Spring/Summer":
+            freq = "Fall, Spring, and Summer"
+        else:
+            freq = freq.replace('/', " and ").replace("  ", ' ')
+
+        return (
+            get_tag_text(elem.select_one("td:first-child")).upper(),
+            freq
+        )
 
 
-def supplemental_information():
-    return None
+    course_frequency = {}
+    for (url, selector, scraper) in [
+        ("https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html", "tbody > tr:not(:first-child)", cics_course_frequency),
+        ("https://www.math.umass.edu/course-offerings", "tbody > tr", math_course_frequency)
+    ]:
+        soup = fetch_soup(url)
+        tag_list = soup.select(selector)
+
+        for tag in tag_list:
+            (course_id, course_freq) = scraper(tag)
+            log.debug("Scraped course frequency: %s - %s", course_id, course_freq)
+            course_frequency[course_id] = course_freq
+
+    log.info("Scraped course frequency.")
+    return course_frequency
 
 
 def scrape_raw_staff_list() -> list[RawStaff]:
@@ -42,7 +77,7 @@ def scrape_raw_staff_list() -> list[RawStaff]:
 
         raw_name = get_tag_text(name_link)
         log.debug("Got name: %s", raw_name)
-        name_match = re.match(r"^(%s),\s*(%s)" % (REGEXP_NAME_GROUP, REGEXP_NAME_GROUP), raw_name)
+        name_match = re.match(f"^({REGEXP_NAME_GROUP}),\s*({REGEXP_NAME_GROUP})", raw_name)
         assert name_match
 
         staff = RawStaff(names=set([f"{name_match.group(2)} {name_match.group(1)}"]))
@@ -57,15 +92,14 @@ def scrape_raw_staff_list() -> list[RawStaff]:
         ]
 
         for (attribute, selector, offset) in attributes:
-            log.debug("Scraping attribute: %s", attribute)
             tag = staff_div.select_one(f"div.views-field-field-{selector}")
 
             if tag:
                 raw_text = get_tag_text(tag)
                 staff[attribute] = raw_text[offset:]
-                log.info("Scraped %s for staff %s.", staff[attribute], attribute)
+                log.debug("Scraped '%s' for staff %s.", staff[attribute], attribute)
             else:
-                log.info("No tag found, skipping.")
+                log.debug("No tag found for %s, skipping.", attribute)
 
         if (href := name_link.attrs["href"]).startswith("/"):
             log.info("Scraping supplemental information from %s.", href)

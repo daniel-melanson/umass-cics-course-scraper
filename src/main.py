@@ -15,7 +15,7 @@ logging.basicConfig(
     filename="out.log",
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     level=logging.DEBUG,
-    datefmt="%m/%d/%Y",
+    datefmt="%H:%M:%S",
     filemode="w",
 )
 log = logging.getLogger(__name__)
