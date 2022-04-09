@@ -1,11 +1,11 @@
-#! python3
-
 import json
 import logging
 import sys
 from datetime import datetime
 from os import path
 from typing import NamedTuple, Union
+
+from requests import JSONDecodeError
 
 from mongo.mongo import push_info
 from normalizer.normalizer import normalize_info
@@ -79,16 +79,16 @@ def main(args: list[str]):
     if flags.json:
         log.info("--json supplied. Attempting to open %s.", flags.json)
         try:
-            file = open(flags.json, "r")
-        except Exception as e:
-            log.exception("Failed to open JSON file: %s", e)
+            file = open(flags.json, "r", encoding="utf-8")
+        except IOError as exception:
+            log.exception("Failed to open JSON file: %s", exception)
             abort("Unable to open `.json` file.")
 
         log.info("File opened. Attempting to load.")
         try:
             data = json.load(file)
-        except Exception as e:
-            log.exception("Failed to load JSON: %s", e)
+        except JSONDecodeError as exception:
+            log.exception("Failed to load JSON: %s", exception)
             abort("Unable to load `.json` file.")
 
         file.close()
@@ -97,8 +97,8 @@ def main(args: list[str]):
         log.info("Beginning scraping routine...")
         try:
             data = scrape_raw_info()
-        except Exception as e:
-            log.exception("Failed while scraping: %s", e)
+        except Exception as exception:
+            log.exception("Failed while scraping: %s", exception)
             abort("Failed scrape raw info.")
 
         log.info("Scraping routine successfully finished.")
@@ -106,21 +106,21 @@ def main(args: list[str]):
             log.info("Dumping scraped info..")
             file_name = f"scrape-results-{datetime.now().isoformat()}.json"
             try:
-                file = open(file_name, "w")
+                file = open(file_name, "w", encoding="utf-8")
 
                 json.dump(data, file)
                 file.close()
-            except Exception as e:
-                log.error("Unable to dump data: %s", e)
+            except Exception as exception:
+                log.error("Unable to dump data: %s", exception)
                 print("Unable to write JSON. Skipping.")
 
             log.info("Dumped raw info to %s.", file_name)
 
     log.info("Beginning normalizing routine...")
     try:
-        (course, staff) = normalize_info(data[:2])
-    except Exception as e:
-        log.exception("Failed while normalizing: %s", e)
+        pass
+    except Exception as exception:
+        log.exception("Failed while normalizing: %s", exception)
         abort("Unable to normalize staff and course information.")
 
     log.info("Normalizing routine successfully finished.")
@@ -128,9 +128,9 @@ def main(args: list[str]):
     if flags.mongo:
         log.info("Beginning uploading routine.")
         try:
-            push_info(flags.mongo, (course, staff, data[2]))
-        except Exception as e:
-            log.exception("Failed pushing information: %s", e)
+            pass
+        except Exception as exception:
+            log.exception("Failed pushing information: %s", exception)
             abort("Unable to upload information.")
 
         log.info("Uploading routine successfully finished.")
