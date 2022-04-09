@@ -75,7 +75,7 @@ def scrape_raw_staff_list() -> list[RawStaff]:
             header = staff_website_soup.select_one("#page-title")
             staff["names"].add(get_tag_text(header))
 
-            img_tag = staff_website_soup.select_one("div.headshot-wrapper > img")            
+            img_tag = staff_website_soup.select_one("div.headshot-wrapper > img")
             if img_tag and img_tag.attrs["src"]:
                 staff["photo"] = img_tag.attrs["src"]
         else:
