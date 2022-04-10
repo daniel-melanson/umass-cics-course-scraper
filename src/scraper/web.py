@@ -69,7 +69,9 @@ def _scrape_cics_courses(courses: dict[str, RawCourse]):
             log.debug("Scraping CICS courses for %s...", semester)
 
             try:
-                soup = fetch_soup(f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html", retry=False)
+                soup = fetch_soup(
+                    f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html", retry=False
+                )
             except HTTPError:
                 log.debug("Descriptions not available, skipping semester.")
                 continue
@@ -119,10 +121,10 @@ def _scrape_cics_courses(courses: dict[str, RawCourse]):
                 if next_sibling.name == "h3":
                     instructor_text = get_tag_text(next_sibling)
                     log.debug("Matching instructor header: %s", instructor_text)
-                    
+
                     instructor_match = re.match(r"^(Instructor\(s\): )(.+)", instructor_text, re.I)
                     assert instructor_match
-                    
+
                     raw_instructors = instructor_match.group(2).strip()
                     log.debug("Matched, got: %s", raw_instructors)
                     course["semester_staff"] |= {semester: raw_instructors}
