@@ -1,18 +1,13 @@
 from typing import Tuple
 
 from scraper.calendar import Semester, scrape_academic_schedule
-from scraper.web import RawStaff, scrape_course_frequency, scrape_raw_staff_list
-from scraper.spire import RawCourse, scrape_course_list
+from scraper.web import RawStaff, scrape_raw_staff_list, scrape_courses
+from scraper.spire import RawCourse, scrape_supplemental_info
 
 
 def scrape_raw_info() -> Tuple[RawCourse, RawStaff, list[Semester]]:
-    course_frequency = scrape_course_frequency()
-    course_list = scrape_course_list()
+    courses = scrape_courses()
 
-    for course in course_list:
-        course_id = course["id"]
+    scrape_supplemental_info(courses)
 
-        if freq := course_frequency[course_id]:
-            course["frequency"] = freq
-
-    return (course_list, scrape_raw_staff_list(), scrape_academic_schedule())
+    return (courses, scrape_raw_staff_list(), scrape_academic_schedule())

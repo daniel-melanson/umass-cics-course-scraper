@@ -1,9 +1,10 @@
 import logging
 from time import sleep
-from typing import Union
+from typing import Tuple, Union
 
 from unidecode import unidecode
 import requests
+from requests.exceptions import RequestException
 from bs4 import BeautifulSoup, Tag
 
 log = logging.getLogger(__name__)
@@ -19,22 +20,23 @@ def clean_text(s: str):
     return s.strip()
 
 
-def fetch_soup(url: str) -> Union[BeautifulSoup, None]:
-    log.info("Fetching %s...", url)
+def fetch_soup(url: str, retry=True) -> BeautifulSoup:
+    log.debug("Fetching %s...", url)
     attempts = 0
     while True:
         try:
             res = requests.get(url)
-            log.info("Successfully fetched %s.", url)
+            res.raise_for_status()
+            log.debug("Successfully fetched %s.", url)
             break
-        except Exception as exception:
+        except RequestException as exception:
             attempts += 1
-            if attempts < 5:
+            if retry and attempts < 5:
                 log.exception("Failed to fetch %s: %s.", url, exception)
                 log.info("Sleeping...")
                 sleep(5)
             else:
-                raise RuntimeError(f"Unable to fetch: {url}")
+                raise exception
 
     return BeautifulSoup(res.content, "html5lib")
 

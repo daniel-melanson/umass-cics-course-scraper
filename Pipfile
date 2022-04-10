@@ -9,6 +9,7 @@ requests = "*"
 html5lib = "*"
 pytz = "*"
 unidecode = "*"
+selenium = "*"
 
 [dev-packages]
 pylint = "*"
