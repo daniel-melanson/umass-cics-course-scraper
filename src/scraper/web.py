@@ -153,7 +153,7 @@ def _scrape_math_courses(courses: dict[str, RawCourse]):
     start = int(first_option.attrs['value'])
     log.debug("Starting from semester id: %s", start)
 
-    for i in range(start - 10, start + 1):
+    for i in range(start + 1, start - 10, -1):
         log.debug("Found semester id: %s", i)
         soup = fetch_soup(f"https://www.math.umass.edu/course-descriptions?semester_tid={i}")
 
