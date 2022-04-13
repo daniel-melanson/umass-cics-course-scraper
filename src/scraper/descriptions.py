@@ -5,7 +5,7 @@ from typing import NamedTuple, Optional, TypedDict
 
 from requests.exceptions import HTTPError
 
-from scraper.shared import fetch_soup, get_tag_text
+from scraper.shared import fetch, fetch_soup, get_tag_text
 
 log = logging.getLogger(__name__)
 
@@ -64,13 +64,13 @@ def _scrape_cics_courses(courses):
             semester = f"{season} {2000 + year}"
             log.debug("Scraping CICS courses for %s...", semester)
 
-            try:
-                soup = fetch_soup(
-                    f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html", retry=False
-                )
-            except HTTPError:
-                log.debug("Descriptions not available, skipping semester.")
+            res = fetch(
+                f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html", retry=False
+            ) 
+            if res.code != 200:
+                log.debug("Descriptions not avaliable, skipping semester.")
                 continue
+
 
             for header in soup.select("h2:not(:first-child)"):
                 raw_title = get_tag_text(header.select_one(":first-child"))

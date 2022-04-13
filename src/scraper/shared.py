@@ -19,25 +19,28 @@ def clean_text(s: str):
     return s.strip()
 
 
-def fetch_soup(url: str, retry=True) -> BeautifulSoup:
+def fetch(url: str) -> requests.Response:
     log.debug("Fetching %s...", url)
     attempts = 0
     while True:
         try:
             res = requests.get(url)
-            res.raise_for_status()
             log.debug("Successfully fetched %s.", url)
             break
         except RequestException as exception:
             attempts += 1
-            if retry and attempts < 5:
+            if attempts < 5:
                 log.exception("Failed to fetch %s: %s.", url, exception)
                 log.info("Sleeping...")
                 sleep(5)
             else:
                 raise exception
 
-    return BeautifulSoup(res.content, "html5lib")
+    return res
+
+
+def fetch_soup(url: str) -> BeautifulSoup:
+    return BeautifulSoup(fetch(url).content, "html5lib")
 
 
 def get_tag_text(tag: Tag, decode=False):
