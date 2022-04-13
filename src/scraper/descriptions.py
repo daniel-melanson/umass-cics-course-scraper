@@ -2,10 +2,11 @@ import logging
 import re
 from datetime import datetime
 from typing import NamedTuple, Optional, TypedDict
+from bs4 import BeautifulSoup
 
 from requests.exceptions import HTTPError
 
-from scraper.shared import fetch, fetch_soup, get_tag_text
+from scraper.shared import fetch, fetch_soup, get_soup, get_tag_text
 
 log = logging.getLogger(__name__)
 
@@ -66,12 +67,13 @@ def _scrape_cics_courses(courses):
 
             res = fetch(
                 f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html", retry=False
-            ) 
+            )
+
             if res.code != 200:
                 log.debug("Descriptions not avaliable, skipping semester.")
                 continue
 
-
+            soup = get_soup(res)
             for header in soup.select("h2:not(:first-child)"):
                 raw_title = get_tag_text(header.select_one(":first-child"))
                 assert raw_title

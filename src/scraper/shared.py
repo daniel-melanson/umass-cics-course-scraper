@@ -39,8 +39,12 @@ def fetch(url: str) -> requests.Response:
     return res
 
 
+def get_soup(res: requests.Response) -> BeautifulSoup:
+    return BeautifulSoup(res.content, "html5lib")
+
+
 def fetch_soup(url: str) -> BeautifulSoup:
-    return BeautifulSoup(fetch(url).content, "html5lib")
+    return get_soup(fetch(url))
 
 
 def get_tag_text(tag: Tag, decode=False):
