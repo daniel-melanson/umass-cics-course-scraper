@@ -7,8 +7,6 @@ from typing import NamedTuple, Union
 
 from requests import JSONDecodeError
 
-from mongo.mongo import push_info
-from normalizer.normalizer import normalize_info
 from scraper.scraper import scrape_raw_info
 
 logging.basicConfig(

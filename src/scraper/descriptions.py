@@ -1,33 +1,13 @@
-from datetime import datetime
 import logging
 import re
+from datetime import datetime
 from typing import NamedTuple, Optional, TypedDict
-from requests.exceptions import HTTPError
 
-from bs4 import Tag
+from requests.exceptions import HTTPError
 
 from scraper.shared import fetch_soup, get_tag_text
 
 log = logging.getLogger(__name__)
-
-REGEXP_NAME_GROUP = (
-    "[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.'-]+"
-)
-
-
-class RawStaff(TypedDict):
-    names: set[str]
-    title: Optional[str]
-    email: Optional[str]
-    phone: Optional[str]
-    office: Optional[str]
-    website: Optional[str]
-    photo: Optional[str]
-
-
-class CourseFrequency(NamedTuple):
-    id: str
-    frequency: str
 
 
 class RawCourse(TypedDict):
@@ -44,23 +24,37 @@ class RawCourse(TypedDict):
     prerequisites: Optional[str]
 
 
-def scrape_courses() -> dict[str, RawCourse]:
-    log.info("Scraping initial course data...")
-    courses: dict[str, RawCourse] = {}
-
-    _scrape_cics_courses(courses)
-    _scrape_math_courses(courses)
-
-    for (course_id, frequency) in _scrape_course_frequency():
-        if course_id in courses:
-            course = courses[course_id]
-            course["frequency"] = frequency
-
-    log.info("Scraped initial course data.")
-    return courses
+class CICSCourse(TypedDict):
+    id: str
+    subject: str
+    title: str
+    most_recent_offering: str
+    past_offerings: list[str]
+    description: str
+    semester_staff: dict[str, str]
 
 
-def _scrape_cics_courses(courses: dict[str, RawCourse]):
+class MATHCourse(TypedDict):
+    id: str
+    subject: str
+    title: str
+    most_recent_offering: str
+    past_offerings: list[str]
+    description: str
+    semester_staff: dict[str, str]
+    prerequisites: Optional[str]
+
+
+class CourseDescriptions(NamedTuple):
+    math: dict[str, MATHCourse]
+    cics: dict[str, CICSCourse]
+
+
+def scrape_course_descriptions() -> CourseDescriptions:
+    return None
+
+
+def _scrape_cics_courses(courses):
     log.info("Scraping CICS courses...")
 
     current_year = int(datetime.now().year) % 2000 + 1
@@ -150,7 +144,7 @@ def _scrape_math_courses(courses: dict[str, RawCourse]):
     soup = fetch_soup("https://www.math.umass.edu/course-descriptions")
     first_option = soup.select_one("#edit-semester-tid > option[selected='selected']")
 
-    start = int(first_option.attrs['value'])
+    start = int(first_option.attrs["value"])
     log.debug("Starting from semester id: %s", start)
 
     for i in range(start + 1, start - 10, -1):
@@ -175,24 +169,20 @@ def _scrape_math_courses(courses: dict[str, RawCourse]):
             raw_title = get_tag_text(title_tag)
 
             log.debug("Matching title: %s", raw_title)
-            title_match = re.match(
-                r'^(MATH|STAT|HONORS)\s*(\w+)(\.\d*)?:\s*([\w -:]+)',
-                raw_title,
-                re.I
-            )
+            title_match = re.match(r"^(MATH|STAT|HONORS)\s*(\w+)(\.\d*)?:\s*([\w -:]+)", raw_title, re.I)
             assert title_match
             log.debug("Matched: %s", title_match)
 
-            if title_match.group(1) == 'HONORS':
+            if title_match.group(1) == "HONORS":
                 log.debug("Skipping due to HONORS subject.")
                 continue
 
             course_subject = title_match.group(1).upper()
-            if course_subject == 'STAT':
-                course_subject = 'STATISTIC'
+            if course_subject == "STAT":
+                course_subject = "STATISTIC"
 
             course_number = title_match.group(2).upper()
-            course_id = course_subject + ' ' + course_number
+            course_id = course_subject + " " + course_number
 
             log.debug("Scraping course: %s", course_id)
             if course_id in courses:
@@ -221,9 +211,7 @@ def _scrape_math_courses(courses: dict[str, RawCourse]):
                     semester_staff={},
                 )
 
-                course_prereqs = article.select_one(
-                    "div[class^='field-course-descr-prereq']"
-                )
+                course_prereqs = article.select_one("div[class^='field-course-descr-prereq']")
                 if course_prereqs:
                     course["prerequisites"] = get_tag_text(course_prereqs)
                     log.debug("Found prerequisites tag: %s", course["prerequisites"])
@@ -234,97 +222,3 @@ def _scrape_math_courses(courses: dict[str, RawCourse]):
         log.debug("Scraped mathematics courses for %s.", semester)
 
     log.info("Scraped mathematics courses.")
-
-
-def _scrape_course_frequency() -> list[CourseFrequency]:
-    log.info("Scraping course frequency...")
-    soup = fetch_soup("https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html")
-
-    def cics_course_frequency(tag: Tag):
-        course_subject = get_tag_text(tag.select_one("td:first-child"))
-        course_id = get_tag_text(tag.select_one("td:nth-child(2)"))
-        return (f"{course_subject} {course_id}".upper(), get_tag_text(tag.select_one("td:last-child")))
-
-    def math_course_frequency(elem: Tag):
-        freq = get_tag_text(elem.select_one("td:last-child"))
-        if freq == "Fall/Spring/Summer":
-            freq = "Fall, Spring, and Summer"
-        else:
-            freq = freq.replace("/", " and ").replace("  ", " ")
-
-        return (get_tag_text(elem.select_one("td:first-child")).upper(), freq)
-
-    course_frequency = []
-    for (url, selector, scraper) in [
-        (
-            "https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html",
-            "tbody > tr:not(:first-child)",
-            cics_course_frequency,
-        ),
-        ("https://www.math.umass.edu/course-offerings", "tbody > tr", math_course_frequency),
-    ]:
-        soup = fetch_soup(url)
-        tag_list = soup.select(selector)
-
-        for tag in tag_list:
-            (course_id, course_freq) = scraper(tag)
-            log.debug("Scraped course frequency: %s - %s", course_id, course_freq)
-            course_frequency.append((course_id, course_freq))
-
-    log.info("Scraped course frequency.")
-    return course_frequency
-
-
-def scrape_raw_staff_list() -> list[RawStaff]:
-    log.info("Scraping staff list...")
-    soup = fetch_soup("https://www.cics.umass.edu/people/all-faculty-staff")
-
-    staff_list = []
-    for staff_div in soup.select("div.view-faculty-directory > div.view-content > div > div.views-row"):
-        name_link = staff_div.select_one("div.views-field-title > span > a")
-        assert name_link
-
-        raw_name = get_tag_text(name_link)
-        log.debug("Matching staff name: %s", raw_name)
-        name_match = re.match(f"^({REGEXP_NAME_GROUP}),\s*({REGEXP_NAME_GROUP})", raw_name)
-        assert name_match
-
-        staff = RawStaff(names=set([f"{name_match.group(2)} {name_match.group(1)}"]))
-
-        log.debug("Initalized staff member %s.", staff)
-        attributes = [
-            ("title", "position", 0),
-            ("email", "email", 3),
-            ("phone", "phone", 3),
-            ("office", "location", 3),
-        ]
-
-        for (attribute, selector, offset) in attributes:
-            tag = staff_div.select_one(f"div.views-field-field-{selector}")
-
-            if tag:
-                raw_text = get_tag_text(tag)
-                staff[attribute] = raw_text[offset:]
-                log.debug("Scraped '%s' for staff %s.", staff[attribute], attribute)
-            else:
-                log.debug("No tag found for %s, skipping.", attribute)
-
-        if (href := name_link.attrs["href"]).startswith("/"):
-            log.debug("Scraping supplemental information from %s.", href)
-            staff["website"] = "https://www.cics.umass.edu" + href
-
-            staff_website_soup = fetch_soup(staff["website"])
-            header = staff_website_soup.select_one("#page-title")
-            staff["names"].add(get_tag_text(header))
-
-            img_tag = staff_website_soup.select_one("div.headshot-wrapper > img")
-            if img_tag and img_tag.attrs["src"]:
-                staff["photo"] = img_tag.attrs["src"]
-        else:
-            log.debug("Offsite url, skipping supplemental scrape process.")
-
-        log.debug("Adding staff member %s.", staff)
-        staff_list.append(staff)
-
-    log.info("Scraped staff information.")
-    return staff_list

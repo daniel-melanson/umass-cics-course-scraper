@@ -1,20 +1,19 @@
-from typing import TypedDict
 import logging
+from typing import Optional, TypedDict
 
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.webdriver import WebDriver
 
-from scraper.web import RawCourse
-
 log = logging.getLogger(__name__)
 
-CATEGORY_LIST = [
-    "CICS",
-    "COMPSCI",
-    "INFO",
-    "MATH",
-    "STATISTC",
-]
+
+class SpireCourse(TypedDict):
+    id: str
+    title: str
+    description: Optional[str]
+    credits: Optional[str]
+    enrollment_requirements: Optional[str]
+    grading_basis: Optional[str]
 
 
 def _create_driver(headless: bool) -> WebDriver:
@@ -27,7 +26,7 @@ def _create_driver(headless: bool) -> WebDriver:
     return WebDriver()
 
 
-def scrape_supplemental_info(courses: dict[str, RawCourse], headless: bool):
+def scrape_spire_courses(filter, headless: bool) -> dict[str, SpireCourse]:
     log.info("Scraping additional course information from spire...")
     driver = _create_driver(headless)
 

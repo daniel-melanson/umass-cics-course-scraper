@@ -1,13 +1,37 @@
-from typing import Tuple
+from datetime import datetime
+from typing import NamedTuple
 
 from scraper.calendar import Semester, scrape_academic_schedule
-from scraper.web import RawStaff, scrape_raw_staff_list, scrape_courses
-from scraper.spire import RawCourse, scrape_supplemental_info
+from scraper.descriptions import CourseDescription, scrape_course_descriptions
+from scraper.frequency import scrape_course_frequency
+from scraper.spire import SpireCourse, scrape_spire_courses
+from scraper.staff import Staff, scrape_staff
 
 
-def scrape_raw_info() -> Tuple[RawCourse, RawStaff, list[Semester]]:
-    courses = scrape_courses()
+class ScrapeData(NamedTuple):
+    semesters: list[Semester]
+    course_frequency: dict[str, str]
+    staff: list[Staff]
+    descriptions: CourseDescription
+    spire_courses: dict[str, SpireCourse]
 
-    scrape_supplemental_info(courses)
 
-    return (courses, scrape_raw_staff_list(), scrape_academic_schedule())
+class ScrapeResult(NamedTuple):
+    version: int
+    date: datetime
+    data: ScrapeData
+
+
+def scrape() -> ScrapeResult:
+    course_descriptions = scrape_course_descriptions()
+    return ScrapeResult(
+        version=1,
+        date=datetime.now(),
+        data=ScrapeData(
+            semesters=scrape_academic_schedule(),
+            course_frequency=scrape_course_frequency(),
+            staff=scrape_staff(),
+            descriptions=course_descriptions,
+            spire_courses=scrape_spire_courses(lambda x: x in course_descriptions),
+        ),
+    )

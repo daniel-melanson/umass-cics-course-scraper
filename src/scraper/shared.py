@@ -1,11 +1,10 @@
 import logging
 from time import sleep
-from typing import Tuple, Union
 
-from unidecode import unidecode
 import requests
-from requests.exceptions import RequestException
 from bs4 import BeautifulSoup, Tag
+from requests.exceptions import RequestException
+from unidecode import unidecode
 
 log = logging.getLogger(__name__)
 
