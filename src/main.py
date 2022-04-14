@@ -7,7 +7,7 @@ from typing import NamedTuple, Union
 
 from requests import JSONDecodeError
 
-from scraper.scraper import scrape_raw_info
+from scraper.scraper import scrape
 
 logging.basicConfig(
     filename="out.log",
@@ -94,7 +94,7 @@ def main(args: list[str]):
     else:
         log.info("Beginning scraping routine...")
         try:
-            data = scrape_raw_info()
+            data = scrape()
         except Exception as exception:
             log.exception("Failed while scraping: %s", exception)
             abort("Failed scrape raw info.")

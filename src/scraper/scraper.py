@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import NamedTuple
 
 from scraper.calendar import Semester, scrape_academic_schedule
-from scraper.descriptions import CourseDescription, scrape_course_descriptions
+from scraper.descriptions import scrape_course_descriptions, CourseDescriptions
 from scraper.frequency import scrape_course_frequency
 from scraper.spire import SpireCourse, scrape_spire_courses
 from scraper.staff import Staff, scrape_staff
@@ -12,7 +12,7 @@ class ScrapeData(NamedTuple):
     semesters: list[Semester]
     course_frequency: dict[str, str]
     staff: list[Staff]
-    descriptions: CourseDescription
+    descriptions: CourseDescriptions
     spire_courses: dict[str, SpireCourse]
 
 
