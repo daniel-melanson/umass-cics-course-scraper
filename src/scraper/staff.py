@@ -24,9 +24,20 @@ class Staff(TypedDict):
 
 def scrape_staff() -> list[Staff]:
     log.info("Scraping staff list...")
-    soup = fetch_soup("https://www.cics.umass.edu/people/all-faculty-staff")
 
     staff_list = []
+
+    _scrape_cics_staff(staff_list)
+    _scrape_math_staff(staff_list)
+
+    log.info("Scraped staff information.")
+    return staff_list
+
+
+def _scrape_cics_staff(staff_list: list[Staff]):
+    log.info("Scraping CICS staff...")
+    soup = fetch_soup("https://www.cics.umass.edu/people/all-faculty-staff")
+
     for staff_div in soup.select("div.view-faculty-directory > div.view-content > div > div.views-row"):
         name_link = staff_div.select_one("div.views-field-title > span > a")
         assert name_link
@@ -73,5 +84,12 @@ def scrape_staff() -> list[Staff]:
         log.debug("Adding staff member %s.", staff)
         staff_list.append(staff)
 
-    log.info("Scraped staff information.")
-    return staff_list
+    log.info("Scraped CICS staff.")
+
+
+def _scrape_math_staff(staff_list: list[Staff]):
+    log.info("Scraping Mathematics department staff...")
+
+    # TODO implement scraping
+
+    log.info("Scraped Mathematics department staff.")
