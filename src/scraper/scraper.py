@@ -23,6 +23,8 @@ class ScrapeResult(NamedTuple):
 
 
 def scrape() -> ScrapeResult:
+    scrape_staff()
+
     course_descriptions = scrape_course_descriptions()
     return ScrapeResult(
         version=1,

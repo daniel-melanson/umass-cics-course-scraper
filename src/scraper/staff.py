@@ -1,3 +1,4 @@
+import html
 import logging
 import re
 from typing import Optional, TypedDict
@@ -27,7 +28,7 @@ def scrape_staff() -> list[Staff]:
 
     staff_list = []
 
-    _scrape_cics_staff(staff_list)
+    # _scrape_cics_staff(staff_list)
     _scrape_math_staff(staff_list)
 
     log.info("Scraped staff information.")
@@ -90,6 +91,59 @@ def _scrape_cics_staff(staff_list: list[Staff]):
 def _scrape_math_staff(staff_list: list[Staff]):
     log.info("Scraping Mathematics department staff...")
 
-    # TODO implement scraping
+    soup = fetch_soup("https://www.math.umass.edu/directory/faculty")
+
+    for tr in soup.select("div.view-content > table > tbody > tr"):
+        link_tag = tr.select_one("td.views-field-title > a")
+        assert link_tag
+
+        staff_info = {}
+        name = get_tag_text(link_tag)
+        log.debug("Scraping mathematics staff member: %s", name)
+        staff_info["names"] = [name]
+        website = link_tag.attrs["href"]
+        if website.startswith("/"):
+            staff_info["website"] = "https://www.math.umass.edu" + link_tag.attrs["href"]
+        else:
+            staff_info["website"] = website
+
+        staff_email_script = tr.select_one("div.field-dir-email > script")
+        assert staff_email_script
+
+        script_text = staff_email_script.next_element
+        log.debug("Matching: %s", script_text)
+        script_match = re.search(r"<a href=\"(.+)\"", script_text)
+        assert script_match
+
+        encoded_email = script_match.group(1)
+        email = html.unescape(encoded_email)[7:]
+        staff_info["email"] = email
+        log.debug("Got staff email: %s", email)
+
+        for (selector, attr) in [
+            ("div.field-dir-office1", "office"),
+            ("div.field-dir-phone1", "phone"),
+            ("div.field-dir-position", "title"),
+        ]:
+            tag = tr.select_one(selector)
+            if tag:
+                staff_info[attr] = get_tag_text(tag)
+                log.debug("Found attribute: %s, scraped: %s", attr, staff_info[attr])
+            else:
+                log.debug("No tag found for attribute %s, skipping.", attr)
+
+        staff = Staff(
+            names=staff_info["names"],
+            department="Mathematics",
+            email=staff_info["email"] if "email" in staff_info else None,
+            office=staff_info["office"] if "office" in staff_info else None,
+            phone=staff_info["phone"] if "phone" in staff_info else None,
+            photo=None,
+            title=staff_info["title"] if "title" in staff_info else None,
+            website=staff_info["website"],
+        )
+
+        log.debug("Scraped staff member: %s", staff)
+        staff_list.append(staff)
 
     log.info("Scraped Mathematics department staff.")
