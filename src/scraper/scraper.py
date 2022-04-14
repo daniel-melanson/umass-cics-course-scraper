@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import NamedTuple
 
 from scraper.calendar import Semester, scrape_academic_schedule
-from scraper.descriptions import scrape_course_descriptions, CourseDescriptions
+from scraper.descriptions import CourseDescriptions, scrape_course_descriptions
 from scraper.frequency import scrape_course_frequency
 from scraper.spire import SpireCourse, scrape_spire_courses
 from scraper.staff import Staff, scrape_staff
