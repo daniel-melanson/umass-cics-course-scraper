@@ -28,10 +28,10 @@ def scrape_staff() -> list[Staff]:
 
     staff_list = []
 
-    # _scrape_cics_staff(staff_list)
+    _scrape_cics_staff(staff_list)
     _scrape_math_staff(staff_list)
 
-    log.info("Scraped staff information.")
+    log.info("Scraped staff list.")
     return staff_list
 
 
@@ -50,7 +50,7 @@ def _scrape_cics_staff(staff_list: list[Staff]):
 
         staff = Staff(names=set([f"{name_match.group(2)} {name_match.group(1)}"]), department="CICS")
 
-        log.debug("Initalized staff member %s.", staff)
+        log.debug("Initalized staff member: %s", staff)
         attributes = [
             ("title", "position", 0),
             ("email", "email", 3),
@@ -81,6 +81,7 @@ def _scrape_cics_staff(staff_list: list[Staff]):
                 staff["photo"] = img_tag.attrs["src"]
         else:
             log.debug("Offsite url, skipping supplemental scrape process.")
+            staff["website"] = href
 
         log.debug("Adding staff member %s.", staff)
         staff_list.append(staff)
@@ -104,6 +105,22 @@ def _scrape_math_staff(staff_list: list[Staff]):
         website = link_tag.attrs["href"]
         if website.startswith("/"):
             staff_info["website"] = "https://www.math.umass.edu" + link_tag.attrs["href"]
+
+            log.debug("Scraping supplementary staff information...")
+            staff_soup = fetch_soup(staff_info["website"])
+
+            img = staff_soup.select_one("div.field-dir-photo > img")
+            if img:
+                log.debug("Found photo, scraping.")
+
+                staff_info["photo"] = img.attrs["src"]
+
+            personal_website = staff_soup.select_one("div.field-dir-personal-webpage > a")
+            if personal_website:
+                log.debug("Found personal website, scraping.")
+
+                staff_info["website"] = personal_website.attrs["href"]
+
         else:
             staff_info["website"] = website
 
@@ -138,7 +155,7 @@ def _scrape_math_staff(staff_list: list[Staff]):
             email=staff_info["email"] if "email" in staff_info else None,
             office=staff_info["office"] if "office" in staff_info else None,
             phone=staff_info["phone"] if "phone" in staff_info else None,
-            photo=None,
+            photo=staff_info["photo"] if "photo" in staff_info else None,
             title=staff_info["title"] if "title" in staff_info else None,
             website=staff_info["website"],
         )
