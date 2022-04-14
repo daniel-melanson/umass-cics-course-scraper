@@ -23,8 +23,6 @@ class ScrapeResult(NamedTuple):
 
 
 def scrape() -> ScrapeResult:
-    scrape_staff()
-
     course_descriptions = scrape_course_descriptions()
     return ScrapeResult(
         version=1,
@@ -34,6 +32,8 @@ def scrape() -> ScrapeResult:
             course_frequency=scrape_course_frequency(),
             staff=scrape_staff(),
             descriptions=course_descriptions,
-            spire_courses=scrape_spire_courses(lambda x: x in course_descriptions),
+            spire_courses=scrape_spire_courses(
+                lambda x: x in course_descriptions.cics.courses or x in course_descriptions.math.courses
+            ),
         ),
     )
