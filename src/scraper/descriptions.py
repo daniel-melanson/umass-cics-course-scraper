@@ -46,7 +46,7 @@ class CourseDescriptions(NamedTuple):
 
 
 def scrape_course_descriptions() -> CourseDescriptions:
-    return CourseDescriptions(None, _scrape_math_courses())
+    return CourseDescriptions(_scrape_cics_courses(), _scrape_math_courses())
 
 
 def _scrape_cics_courses() -> DescriptionsPosting[CICSCourse]:
