@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from typing import TypedDict
+from typing import NamedTuple
 
 import pytz
 
@@ -11,15 +11,15 @@ from shared.semester import Semester
 log = logging.getLogger(__name__)
 
 
-class Event(TypedDict):
+class Event(NamedTuple):
     date: datetime
     description: str
 
 
-class SemesterSchedule(TypedDict):
+class SemesterSchedule(NamedTuple):
     semester: Semester
-    startDate: datetime
-    endDate: datetime
+    start_date: datetime
+    end_date: datetime
     events: list[Event]
 
 
@@ -32,20 +32,22 @@ def scrape_academic_schedule() -> list[Semester]:
 
     semester_list = []
     for header in soup.select(".field-item h3"):
-        semester_title = get_tag_text(header)
+        semester_title = get_tag_text(header, decode=True)
 
-        log.info("Scraping semester %s.", semester_title)
-        match = re.match(r"^(university )?(spring|summer|fall|winter) (\d{4})", semester_title, re.I)
+        log.debug("Scraping semester: %s", semester_title)
+        match = re.match(r"^(University )?(Spring|Summer|Fall|Winter) (\d{4})", semester_title)
         if not match:
-            log.info("Header '%s' does not match, skipping.")
+            log.debug("Header '%s' does not match, skipping.", semester_title)
             continue
 
         year = match.group(3)
         season = match.group(2)
-        schedule = SemesterSchedule(semester=Semester(season, year), startDate=None, endDate=None, events=[])
+        event_list = []
 
-        log.debug("Initalized semester schedule: %s", schedule)
-        log.info("Scraping events for %s...", schedule["semester"])
+        start_date = None
+        end_date = None
+        semester = Semester(season, year)
+        log.debug("Scraping events for: %s", str(semester))
 
         table = header.find_next("table")
         for event_element in table.select("tr"):
@@ -76,21 +78,18 @@ def scrape_academic_schedule() -> list[Semester]:
 
             if re.match(event_desc, "First day of classes", re.I):
                 log.debug("Selecting event as start date.")
-                schedule["startDate"] = utc_time
+                start_date = utc_time
             elif re.match(event_desc, "Last day of classes", re.I):
                 log.debug("Selecting event as end date.")
-                schedule["endDate"] = utc_time
+                end_date = utc_time
 
-            event = {
-                "date": utc_time,
-                "description": event_desc,
-            }
+            event = Event(utc_time, event_desc)
 
             log.debug("Adding event: %s", event)
-            schedule["events"].append(event)
+            event_list.append(event)
 
-        semester_list.append(schedule)
-        log.debug("Added semester schedule: %s", schedule)
+        semester_list.append(SemesterSchedule(semester, start_date, end_date, event_list))
+        log.debug("Added semester schedule: %s", semester_list[-1])
 
     log.info("Scraped academic schedule.")
     return semester_list
