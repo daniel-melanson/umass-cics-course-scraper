@@ -7,6 +7,6 @@ def clean_text(s: str) -> str:
     while (match := re.search(r"\s{2,}", s)) is not None:
         span = match.span(0)
 
-        s = s[: span[0]] + " " + s[span[1]:]
+        s = s[: span[0]] + " " + s[span[1] :]
 
     return s
