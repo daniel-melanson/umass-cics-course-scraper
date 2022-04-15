@@ -6,17 +6,9 @@ from bs4 import BeautifulSoup, Tag
 from requests.exceptions import RequestException
 from unidecode import unidecode
 
+from shared.util import clean_text
+
 log = logging.getLogger(__name__)
-
-
-def clean_text(s: str):
-    for r in ["\xa0", "\n", "\t"]:
-        s = s.replace(r, " ")
-
-    while "  " in s:
-        s = s.replace("  ", " ")
-
-    return s.strip()
 
 
 def fetch(url: str) -> requests.Response:

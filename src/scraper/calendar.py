@@ -6,6 +6,7 @@ from typing import TypedDict
 import pytz
 
 from scraper.shared import fetch_soup, get_tag_text
+from shared.semester import Semester
 
 log = logging.getLogger(__name__)
 
@@ -15,9 +16,8 @@ class Event(TypedDict):
     description: str
 
 
-class Semester(TypedDict):
-    season: str
-    year: int
+class SemesterSchedule(TypedDict):
+    semester: Semester
     startDate: datetime
     endDate: datetime
     events: list[Event]
@@ -42,9 +42,9 @@ def scrape_academic_schedule() -> list[Semester]:
 
         year = match.group(3)
         season = match.group(2)
-        semester = Semester(season=season, year=year, startDate=None, endDate=None, events=[])
+        semester = SemesterSchedule(semester=Semester(season, year), startDate=None, endDate=None, events=[])
 
-        log.debug("Initalized semester: %s", semester)
+        log.debug("Initalized semester schedule: %s", semester)
         log.info("Scraping events for %s %s...", semester["season"], semester["year"])
 
         table = header.find_next("table")
@@ -89,9 +89,9 @@ def scrape_academic_schedule() -> list[Semester]:
             log.debug("Adding event: %s", event)
             semester["events"].append(event)
 
-        log.info("Events scraped. Adding semester.")
+        log.info("Events scraped. Adding semester schedule.")
         semester_list.append(semester)
-        log.debug("Added semester %s", semester)
+        log.debug("Added semester schedule: %s", semester)
 
-    log.info("Semesters scraped.")
+    log.info("Scraped academic schedule.")
     return semester_list

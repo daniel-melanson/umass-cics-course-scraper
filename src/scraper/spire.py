@@ -1,14 +1,17 @@
 import logging
-from typing import Optional, TypedDict
+from typing import NamedTuple, Optional
 
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.webdriver import WebDriver
 
+from shared.courses import CourseID
+from shared.semester import Semester
+
 log = logging.getLogger(__name__)
 
 
-class SpireCourse(TypedDict):
-    id: str
+class SpireCourse(NamedTuple):
+    id: CourseID
     title: str
     description: Optional[str]
     credits: Optional[str]
@@ -16,18 +19,35 @@ class SpireCourse(TypedDict):
     grading_basis: Optional[str]
 
 
-def _create_driver(headless: bool) -> WebDriver:
+class SpireSection(NamedTuple):
+    course_id: CourseID
+    section_id: str
+    session: str
+    enrolled: int
+    enrollment_cap: int
+    schedule: str
+    location: str
+    instructor: str
+
+
+class SpireData(NamedTuple):
+    courses: dict[CourseID, SpireCourse]
+    sections: dict[Semester, dict[CourseID, SpireSection]]
+
+
+def _navigate_to_catalog(driver: WebDriver):
+    pass
+
+
+def scrape_spire(course_ids: set[str], section_semesters: list[str], headless: bool) -> dict[str, SpireCourse]:
+    log.info("Scraping course information from spire...")
+    opts = Options()
     if headless:
-        opts = Options()
         opts.headless = True
 
-        return WebDriver(options=opts)
+    driver = WebDriver(options=opts)
 
-    return WebDriver()
+    log.info("")
+    _navigate_to_catalog(driver)
 
-
-def scrape_spire_courses(filter, headless: bool) -> dict[str, SpireCourse]:
-    log.info("Scraping additional course information from spire...")
-    driver = _create_driver(headless)
-
-    log.info("Scraped additional course information.")
+    log.info("Scraped course information.")

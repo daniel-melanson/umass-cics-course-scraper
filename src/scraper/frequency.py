@@ -3,18 +3,19 @@ import logging
 from bs4 import Tag
 
 from scraper.shared import fetch_soup, get_tag_text
+from shared.courses import CourseID
 
 log = logging.getLogger(__name__)
 
 
-def scrape_course_frequency() -> dict[str, str]:
+def scrape_course_frequency() -> dict[CourseID, str]:
     log.info("Scraping course frequency...")
     soup = fetch_soup("https://web.cs.umass.edu/csinfo/autogen/cmpscicoursesfull.html")
 
     def cics_course_frequency(tag: Tag):
         course_subject = get_tag_text(tag.select_one("td:first-child"))
-        course_id = get_tag_text(tag.select_one("td:nth-child(2)"))
-        return (f"{course_subject} {course_id}".upper(), get_tag_text(tag.select_one("td:last-child")))
+        course_number = get_tag_text(tag.select_one("td:nth-child(2)"))
+        return (CourseID(course_subject, course_number), get_tag_text(tag.select_one("td:last-child")))
 
     def math_course_frequency(elem: Tag):
         freq = get_tag_text(elem.select_one("td:last-child"))

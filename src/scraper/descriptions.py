@@ -1,43 +1,38 @@
 import logging
 import re
 from datetime import datetime
-from typing import NamedTuple, Optional, TypedDict, TypeVar, Union
+from typing import NamedTuple, Optional, Union
 
 from scraper.shared import fetch, fetch_soup, get_soup, get_tag_text
+from shared.courses import CourseID
+from shared.semester import Semester
 
 log = logging.getLogger(__name__)
 
 
 class CICSCourse(NamedTuple):
-    id: str
-    subject: str
-    number: str
+    id: CourseID
     title: str
-    offerings: list[str]
+    offerings: list[Semester]
     description: str
-    semester_staff: dict[str, str]
-    semester_websites: dict[str, str]
+    semester_staff: dict[Semester, str]
+    semester_websites: dict[Semester, str]
 
 
 class MATHCourse(NamedTuple):
-    id: str
-    subject: str
-    number: str
+    id: CourseID
     title: str
-    offerings: list[str]
+    offerings: list[Semester]
     description: str
-    semester_staff: dict[str, str]
+    semester_staff: dict[Semester, str]
     prerequisites: Optional[str]
     chair: Optional[str]
-    semester_websites: dict[str, str]
-
-
-T = TypeVar("T", MATHCourse, CICSCourse)
+    semester_websites: dict[Semester, str]
 
 
 class DescriptionsPosting(NamedTuple):
-    most_recent_semester: str
-    courses: dict[str, Union[CICSCourse, MATHCourse]]
+    most_recent_semester: Semester
+    courses: dict[CourseID, Union[CICSCourse, MATHCourse]]
 
 
 class CourseDescriptions(NamedTuple):
@@ -52,15 +47,15 @@ def scrape_course_descriptions() -> CourseDescriptions:
 def _scrape_cics_courses() -> DescriptionsPosting[CICSCourse]:
     log.info("Scraping CICS courses...")
 
-    most_recent_semester = None
-    courses: dict[str, CICSCourse] = {}
+    most_recent_semester: Union[Semester, None] = None
+    courses: dict[CourseID, CICSCourse] = {}
 
     current_year = int(datetime.now().year) % 2000 + 1
     for year in range(current_year, 17, -1):
         for query_id in [7, 3]:
             season = "Fall" if query_id == 7 else "Spring"
-            semester = f"{season} {2000 + year}"
-            log.debug("Scraping CICS courses for %s...", semester)
+            semester = Semester(season, year + 2000)
+            log.debug("Scraping CICS courses for semester: %s", semester)
 
             res = fetch(f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html")
 
@@ -87,7 +82,7 @@ def _scrape_cics_courses() -> DescriptionsPosting[CICSCourse]:
                     continue
 
                 course_number = title_match.group(3).upper()
-                course_id = course_subject + " " + course_number
+                course_id = CourseID(course_subject, course_number)
                 log.debug("Scraping course: %s", course_id)
 
                 if course_id in courses:
@@ -102,8 +97,6 @@ def _scrape_cics_courses() -> DescriptionsPosting[CICSCourse]:
 
                     course = CICSCourse(
                         id=course_id,
-                        subject=course_subject,
-                        number=course_number,
                         title=title_match.group(4),
                         description=course_description,
                         offerings=[],
@@ -155,7 +148,7 @@ def _scrape_math_courses() -> DescriptionsPosting[MATHCourse]:
     title_match = re.search(r"(Spring|Fall)\s+(\d{4})$", title_text)
     assert title_match
 
-    info_semester = f"{title_match.group(1)} {title_match.group(2)}"
+    info_semester = Semester(title_match.group(1), title_match.group(2))
 
     for section_group in soup.select("div.view-content > div.views-row"):
         section_entry = section_group.select_one("div.course-section")
@@ -226,11 +219,12 @@ def _scrape_math_courses() -> DescriptionsPosting[MATHCourse]:
         selected_option = soup.select_one("#edit-semester-tid > option[selected='selected']")
         assert selected_option
 
-        semester = get_tag_text(selected_option)
+        semester_text = get_tag_text(selected_option)
+        semester = Semester.from_text(semester_text)
         if most_recent_semester is None:
             most_recent_semester = semester
 
-        log.debug("Scraping mathematics courses for %s...", semester)
+        log.debug("Scraping mathematics courses for %s...", semester_text)
         for article in articles:
             title_tag = article.select_one("div[class^='field-title']")
             assert title_tag
@@ -247,11 +241,9 @@ def _scrape_math_courses() -> DescriptionsPosting[MATHCourse]:
                 continue
 
             course_subject = title_match.group(1).upper()
-            if course_subject == "STAT":
-                course_subject = "STATISTIC"
-
             course_number = title_match.group(2).upper()
-            course_id = course_subject + " " + course_number
+
+            course_id = CourseID(course_subject, course_number)
 
             log.debug("Scraping course: %s", course_id)
             if course_id in courses:
@@ -270,9 +262,7 @@ def _scrape_math_courses() -> DescriptionsPosting[MATHCourse]:
                 course_description = get_tag_text(description_tag)
                 course_prereqs = article.select_one("div[class^='field-course-descr-prereq']")
                 course = MATHCourse(
-                    subject=course_subject,
                     id=course_id,
-                    number=course_number,
                     title=course_title,
                     description=course_description,
                     offerings=[],
@@ -287,7 +277,7 @@ def _scrape_math_courses() -> DescriptionsPosting[MATHCourse]:
             course.offerings.append(semester)
             log.debug("Finished updating: %s", course)
 
-        log.debug("Scraped mathematics courses for %s.", semester)
+        log.debug("Scraped mathematics courses for semester: %s.", semester)
 
     log.debug("Scraped descriptions.")
 

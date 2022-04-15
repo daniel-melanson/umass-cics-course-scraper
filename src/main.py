@@ -94,7 +94,7 @@ def main(args: list[str]):
     else:
         log.info("Beginning scraping routine...")
         try:
-            data = scrape()
+            data = scrape(flags.headless)
         except Exception as exception:
             log.exception("Failed while scraping: %s", exception)
             abort("Failed scrape raw info.")
