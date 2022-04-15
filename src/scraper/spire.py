@@ -39,7 +39,7 @@ def _navigate_to_catalog(driver: WebDriver):
     pass
 
 
-def scrape_spire(course_ids: set[CourseID], section_semesters: list[Semester], headless: bool) -> dict[CourseID, SpireCourse]:
+def scrape_spire(course_ids: set[CourseID], headless: bool) -> dict[CourseID, SpireCourse]:
     log.info("Scraping course information from spire...")
     opts = Options()
     if headless:
