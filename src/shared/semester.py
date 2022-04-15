@@ -31,6 +31,10 @@ class Semester:
         assert isinstance(__o, Semester)
         return self.season == __o.season and self.year == __o.year
 
+    def __ne__(self, __o: object) -> bool:
+        assert isinstance(__o, Semester)
+        return self.season != __o.season or self.year != __o.year
+
     def __hash__(self) -> int:
         return hash(str(self))
 
