@@ -42,10 +42,10 @@ def scrape_academic_schedule() -> list[Semester]:
 
         year = match.group(3)
         season = match.group(2)
-        semester = SemesterSchedule(semester=Semester(season, year), startDate=None, endDate=None, events=[])
+        schedule = SemesterSchedule(semester=Semester(season, year), startDate=None, endDate=None, events=[])
 
-        log.debug("Initalized semester schedule: %s", semester)
-        log.info("Scraping events for %s %s...", semester["season"], semester["year"])
+        log.debug("Initalized semester schedule: %s", schedule)
+        log.info("Scraping events for %s...", schedule["semester"])
 
         table = header.find_next("table")
         for event_element in table.select("tr"):
@@ -76,10 +76,10 @@ def scrape_academic_schedule() -> list[Semester]:
 
             if re.match(event_desc, "First day of classes", re.I):
                 log.debug("Selecting event as start date.")
-                semester["startDate"] = utc_time
+                schedule["startDate"] = utc_time
             elif re.match(event_desc, "Last day of classes", re.I):
                 log.debug("Selecting event as end date.")
-                semester["endDate"] = utc_time
+                schedule["endDate"] = utc_time
 
             event = {
                 "date": utc_time,
@@ -87,11 +87,10 @@ def scrape_academic_schedule() -> list[Semester]:
             }
 
             log.debug("Adding event: %s", event)
-            semester["events"].append(event)
+            schedule["events"].append(event)
 
-        log.info("Events scraped. Adding semester schedule.")
-        semester_list.append(semester)
-        log.debug("Added semester schedule: %s", semester)
+        semester_list.append(schedule)
+        log.debug("Added semester schedule: %s", schedule)
 
     log.info("Scraped academic schedule.")
     return semester_list

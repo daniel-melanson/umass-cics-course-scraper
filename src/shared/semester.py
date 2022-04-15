@@ -2,11 +2,9 @@ import re
 
 from shared.util import clean_text
 
-SEMESTER_PATTERN = re.compile(r"^(Spring|Summer|Fall|Winter) 20\d{2}$")
-
 
 def is_semester(s: str) -> bool:
-    return SEMESTER_PATTERN.match(s) is not None
+    return re.match(r"^(Spring|Summer|Fall|Winter) 20\d{2}$", s) is not None
 
 
 SEASON_LIST = ["Spring", "Summer", "Fall", "Winter"]
@@ -22,9 +20,8 @@ class Semester:
         [season, year] = semester_text.split(" ")
         return Semester(season, year)
 
-    def __init__(self, season: str, year: int):
-        assert 2000 < year < 2100
-        assert season in SEASON_LIST
+    def __init__(self, season: str, year: str):
+        assert re.match(r"^\d{4}$", year) is not None
 
         self._season = season
         self._year = year

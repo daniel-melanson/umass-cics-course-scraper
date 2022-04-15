@@ -34,6 +34,6 @@ def scrape(headless: bool) -> ScrapeResult:
             course_frequency=course_frequency,
             staff=scrape_staff(),
             descriptions=course_descriptions,
-            spire=scrape_spire(set(course_frequency.keys()), semesters, headless),
+            spire=scrape_spire(set(course_frequency.keys()), [], headless),
         ),
     )

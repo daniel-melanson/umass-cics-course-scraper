@@ -25,6 +25,9 @@ class CourseID:
         self._subject = subject
         self._number = number
 
+    def __str__(self) -> str:
+        return self._id
+
     @property
     def subject(self) -> str:
         return self._subject

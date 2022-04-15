@@ -54,7 +54,7 @@ def _scrape_cics_courses() -> DescriptionsPosting[CICSCourse]:
     for year in range(current_year, 17, -1):
         for query_id in [7, 3]:
             season = "Fall" if query_id == 7 else "Spring"
-            semester = Semester(season, year + 2000)
+            semester = Semester(season, str(year + 2000))
             log.debug("Scraping CICS courses for semester: %s", semester)
 
             res = fetch(f"https://web.cs.umass.edu/csinfo/autogen/cicsdesc1{year}{query_id}.html")
