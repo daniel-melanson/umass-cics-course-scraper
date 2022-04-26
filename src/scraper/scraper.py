@@ -24,7 +24,6 @@ class ScrapeResult(NamedTuple):
 
 def scrape(headless: bool) -> ScrapeResult:
     course_frequency = scrape_course_frequency()
-    course_descriptions = scrape_course_descriptions()
 
     return ScrapeResult(
         version=1,
@@ -33,7 +32,7 @@ def scrape(headless: bool) -> ScrapeResult:
             semesters=scrape_academic_schedule(),
             course_frequency=course_frequency,
             staff=scrape_staff(),
-            descriptions=course_descriptions,
+            descriptions=scrape_course_descriptions(),
             spire=scrape_spire(set(course_frequency.keys()), headless),
         ),
     )
