@@ -7,6 +7,8 @@ from scraper.frequency import scrape_course_frequency
 from scraper.spire import SpireCourse, scrape_spire
 from scraper.staff import Staff, scrape_staff
 
+SCRAPE_VERSION = 1
+
 
 class ScrapeData(NamedTuple):
     semester_schedule: list[SemesterSchedule]
@@ -23,16 +25,14 @@ class ScrapeResult(NamedTuple):
 
 
 def scrape(headless: bool) -> ScrapeResult:
-    course_frequency = scrape_course_frequency()
-
     return ScrapeResult(
-        version=1,
+        version=SCRAPE_VERSION,
         date=datetime.now(),
         data=ScrapeData(
             semesters=scrape_academic_schedule(),
-            course_frequency=course_frequency,
+            course_frequency=scrape_course_frequency(),
             staff=scrape_staff(),
             descriptions=scrape_course_descriptions(),
-            spire=scrape_spire(set(course_frequency.keys()), headless),
+            spire=scrape_spire(headless),
         ),
     )

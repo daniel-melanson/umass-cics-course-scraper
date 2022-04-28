@@ -1,14 +1,5 @@
-from typing import NamedTuple, Tuple
+from scraper.scraper import ScrapeResult, SCRAPE_VERSION
 
 
-class Course(NamedTuple):
-    id: str
-    subject: str
-
-
-class Staff(NamedTuple):
-    names: str
-
-
-def normalize_info(data) -> Tuple[Course, Staff]:
-    pass
+def normalize_info(data: ScrapeResult):
+    assert data.version == SCRAPE_VERSION
