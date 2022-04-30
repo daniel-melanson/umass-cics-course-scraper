@@ -3,8 +3,17 @@ import re
 from shared.util import clean_text
 
 
+SEASON_REGEXP = r"(Spring|Summer|Fall|Winter)"
+YEAR_REGEXP = r"(20\d{2})$"
+SEMESTER_REGEXP = f"^({SEASON_REGEXP} {YEAR_REGEXP})|({YEAR_REGEXP} {SEASON_REGEXP})$"
+
+
+def match_semester(s: str):
+    return re.match(SEMESTER_REGEXP, s)
+
+
 def is_semester(s: str) -> bool:
-    return re.match(r"^(Spring|Summer|Fall|Winter) 20\d{2}$", s) is not None
+    return match_semester(s) is not None
 
 
 SEASON_LIST = ["Spring", "Summer", "Fall", "Winter"]
@@ -15,10 +24,12 @@ class Semester:
     def from_text(text: str) -> "Semester":
         semester_text = clean_text(text)
 
-        assert is_semester(semester_text)
+        match = match_semester(semester_text)
+        assert match
 
-        [season, year] = semester_text.split(" ")
-        return Semester(season, year)
+        last_group = int(match.lastgroup)
+
+        return Semester(match.group(last_group - 1), match.group(last_group))
 
     def __init__(self, season: str, year: str):
         assert re.match(r"^\d{4}$", year) is not None
